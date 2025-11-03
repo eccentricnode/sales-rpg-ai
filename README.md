@@ -2,6 +2,8 @@
 
 An AI-powered proof-of-concept application that listens to sales conversations in real-time, detects objections, and suggests helpful responses to sales representatives.
 
+https://www.loom.com/share/e62a965e174e4464af5715c63beecc26
+
 ## Overview
 
 This project is a POC to test the core value proposition: **"Can AI detect sales objections and suggest useful responses in real-time?"**
