@@ -13,27 +13,6 @@ Build the simplest possible version to test: **"Can AI detect sales objections a
 - Shows suggested responses
 - That's it.
 
-### Objections to Detect (Start with 3)
-1. **Price**: "expensive", "cost", "budget", "price"
-2. **Time**: "think about it", "not ready", "later" 
-3. **Spouse**: "talk to my wife", "discuss", "ask"
-
-### Responses (Pre-written)
-**Price Objection**:
-- "What's driving the budget concern?"
-- "Let me show you the ROI breakdown"
-- "What would make this feel affordable?"
-
-**Time Objection**:
-- "What's your timeline for making this decision?"
-- "What would help you feel ready to move forward?"
-- "When would be a good time to revisit this?"
-
-**Spouse Objection**:
-- "What information would be helpful for that conversation?"
-- "Would it help if I joined that discussion?"
-- "What are their main concerns likely to be?"
-
 ## Simple UI
 - Basic window (not invisible yet)
 - Live transcript at top
