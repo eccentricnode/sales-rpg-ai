@@ -3,3 +3,4 @@ test-transcript-*
 __pycache__/
 *.wave
 *.mp4
+*.srt
