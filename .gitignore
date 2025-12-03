@@ -1,2 +1,5 @@
 *.mp4
 test-transcript-*
+__pycache__/
+*.wave
+*.mp4
