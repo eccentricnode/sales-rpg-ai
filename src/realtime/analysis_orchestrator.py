@@ -113,7 +113,15 @@ class StreamingAnalyzer:
             temperature=0.3,  # Lower temperature for more consistent analysis
         )
 
-        return response.choices[0].message.content
+        # Handle empty/null responses (can happen with rate limiting)
+        if not response.choices:
+            raise ValueError("Empty response from API (possible rate limiting)")
+
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError("Null content in API response")
+
+        return content
 
 
 class AnalysisOrchestrator:

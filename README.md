@@ -2,7 +2,7 @@
 
 AI-powered system that listens to sales conversations, detects objections, and suggests responses in real-time.
 
-**Status:** Phase 1 (Proof of Concept) complete. Core value proposition validated.
+**Status:** Phase 2 (Real-Time MVP) core implementation complete. Streaming analysis working.
 
 ## Architecture
 ```mermaid
@@ -57,13 +57,23 @@ uv run python src/transcribe_and_analyze.py test.mp4
 
 ## Usage
 ```bash
-# Transcribe and analyze any audio file
+# Real-time analysis (streaming, with WhisperLive)
+uv run python src/realtime_transcribe.py path/to/audio.mp4
+
+# Real-time with verbose output (shows all LLM responses)
+uv run python src/realtime_transcribe.py path/to/audio.mp4 --verbose
+
+# Microphone input (live)
+uv run python src/realtime_transcribe.py --mic
+
+# Test real-time flow without WhisperLive
+uv run python src/test_realtime_flow.py
+
+# Batch analysis (original Phase 1 script)
 uv run python src/transcribe_and_analyze.py path/to/audio.mp4
 
 # Test objection detection with mock data
 uv run python test_objection_detection.py
-
-# Press Ctrl+C during transcription to analyze partial transcript
 ```
 
 ## Features
@@ -106,16 +116,20 @@ Suggested Responses:
 ```
 sales-rpg-ai/
 ├── src/
-│   ├── transcribe_and_analyze.py  # Main pipeline
-│   └── realtime/                   # Real-time analysis (Phase 2)
-│       ├── buffer_manager.py       # Dual buffer for streaming
-│       └── analysis_orchestrator.py # Async LLM calls
-├── test_objection_detection.py     # Test suite
+│   ├── transcribe_and_analyze.py   # Batch analysis (Phase 1)
+│   ├── realtime_transcribe.py      # Real-time analysis (Phase 2)
+│   ├── test_realtime_flow.py       # Test without WhisperLive
+│   └── realtime/                   # Real-time module
+│       ├── __init__.py             # Module exports
+│       ├── buffer_manager.py       # DualBufferManager, BufferConfig
+│       └── analysis_orchestrator.py # AnalysisOrchestrator, StreamingAnalyzer
+├── test_objection_detection.py     # Mock data test suite
 ├── docs/
 │   ├── mvp.md                      # Phase roadmap
 │   └── product/                    # PRDs and PM docs
 ├── WhisperLive/                    # Transcription submodule
 ├── pyproject.toml                  # Dependencies
+├── CHANGELOG.md                    # Development history
 └── .env                            # API keys
 ```
 

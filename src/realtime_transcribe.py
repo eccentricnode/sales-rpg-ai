@@ -45,6 +45,7 @@ class RealtimeObjectionDetector:
         host: str = "localhost",
         port: int = 9090,
         config: BufferConfig = None,
+        verbose: bool = False,
     ):
         """
         Initialize the real-time detector.
@@ -54,10 +55,12 @@ class RealtimeObjectionDetector:
             host: WhisperLive server host
             port: WhisperLive server port
             config: Buffer configuration (uses defaults if not provided)
+            verbose: If True, show all LLM responses (not just objections)
         """
         self.host = host
         self.port = port
         self.config = config or BufferConfig()
+        self.verbose = verbose
 
         # Stats
         self.objections_detected = 0
@@ -94,8 +97,21 @@ class RealtimeObjectionDetector:
         if result.has_objection:
             self.objections_detected += 1
             self._display_objection(result)
+        elif self.verbose:
+            self._display_verbose_result(result)
         else:
             print(f"[RESULT] No objection detected ({result.latency_ms:.0f}ms)")
+
+    def _display_verbose_result(self, result: AnalysisResult) -> None:
+        """Display full LLM response (verbose mode)."""
+        print(f"\n[LLM RESPONSE] ({result.latency_ms:.0f}ms)")
+        print(f"Text analyzed: \"{result.active_text}\"")
+        if result.context_text:
+            ctx = result.context_text[:80] + "..." if len(result.context_text) > 80 else result.context_text
+            print(f"Context: \"{ctx}\"")
+        print("-" * 40)
+        print(result.raw_response)
+        print("-" * 40 + "\n")
 
     def _display_objection(self, result: AnalysisResult) -> None:
         """Display detected objection prominently."""
@@ -230,13 +246,18 @@ def main():
         sys.exit(1)
 
     # Parse arguments
-    if len(sys.argv) < 2:
+    args = sys.argv[1:]
+    verbose = "--verbose" in args or "-v" in args
+    args = [a for a in args if a not in ("--verbose", "-v")]
+
+    if len(args) < 1:
         print("Usage:")
-        print("  python src/realtime_transcribe.py <audio_file_path>")
-        print("  python src/realtime_transcribe.py --mic")
+        print("  python src/realtime_transcribe.py <audio_file_path> [--verbose]")
+        print("  python src/realtime_transcribe.py --mic [--verbose]")
         print("\nOptions:")
         print("  <audio_file_path>  Path to audio/video file to analyze")
         print("  --mic              Use microphone input for live analysis")
+        print("  --verbose, -v      Show all LLM responses (not just objections)")
         sys.exit(1)
 
     # Configure buffer (using defaults from PRD)
@@ -253,13 +274,14 @@ def main():
     detector = RealtimeObjectionDetector(
         api_key=api_key,
         config=config,
+        verbose=verbose,
     )
 
     # Run based on input type
-    if sys.argv[1] == "--mic":
+    if args[0] == "--mic":
         detector.run_microphone()
     else:
-        audio_path = sys.argv[1]
+        audio_path = args[0]
         if not Path(audio_path).exists():
             print(f"ERROR: File not found: {audio_path}")
             sys.exit(1)
