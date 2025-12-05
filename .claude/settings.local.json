@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(uv init:*)"
+      "Bash(uv init:*)",
+      "Bash(mkdir:*)",
+      "Bash(python src/realtime_transcribe.py:*)"
     ],
     "deny": [],
     "ask": []
