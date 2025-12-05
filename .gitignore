@@ -1,6 +1,7 @@
 *.mp4
 test-transcript-*
 __pycache__/
-*.wave
+*.wav
 *.mp4
 *.srt
+.env

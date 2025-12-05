@@ -20,18 +20,19 @@ docker ps | grep 9090
 # (use your existing docker command)
 ```
 
-### 2. Get OpenRouter API Key (Optional but Recommended)
+### 2. Get OpenRouter API Key (Required for Objection Analysis)
 
-1. Visit https://openrouter.ai/
+1. Visit <https://openrouter.ai/>
 2. Sign up for free account
 3. Get your API key
-4. Export it:
+4. Add to `.env` file:
 
 ```bash
-export OPENROUTER_API_KEY="sk-or-v1-..."
+# Create .env file in project root
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
 ```
 
-**Note**: Without the API key, you'll get the transcript but not the objection analysis.
+**Note**: Without the API key, you'll get the transcript but not the objection analysis. The script auto-loads from `.env`.
 
 ### 3. Install Dependencies
 
@@ -153,9 +154,11 @@ Now that the full pipeline works, you can:
 ## Technical Details
 
 - **Transcription Model**: Whisper `base` (good balance of speed/accuracy)
-- **AI Model**: `meta-llama/llama-3.2-3b-instruct:free` (OpenRouter free tier)
+- **AI Model**: `meta-llama/llama-3.3-70b-instruct:free` (OpenRouter free tier)
 - **Audio Formats Supported**: MP4, MP3, WAV, M4A, FLAC, etc. (anything FFmpeg can read)
 - **Server**: WhisperLive WebSocket (localhost:9090)
+- **Detection Types**: PRICE, TIME, DECISION_MAKER, OTHER
+- **Features**: Confidence scoring, smokescreen detection, 3 responses per objection
 
 ## Files Created
 

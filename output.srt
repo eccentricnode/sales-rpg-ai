@@ -1,40 +1,16 @@
 1
-00:00:00,000 --> 00:00:06,200
- Content or something. Yeah nice man. How are you doing this morning? I'm doing good afternoon for you
+00:00:00,000 --> 00:00:09,900
+ Content or something. Yeah nice man. How are you doing this morning? I'm doing good for you. Nice morning. Still awesome. Awesome. What do you call the phone?
 
 2
-00:00:06,200 --> 00:00:08,199
- Nice morning, still.
-
-3
-00:00:08,199 --> 00:00:09,199
- Awesome, awesome.
-
-4
-00:00:09,199 --> 00:00:10,720
- What do you call a phone?
-
-5
-00:00:10,720 --> 00:00:12,320
+00:00:09,900 --> 00:00:11,900
  I'm in Denver right now.
 
-6
-00:00:12,320 --> 00:00:13,320
- Okay, very cool.
+3
+00:00:11,900 --> 00:00:13,900
+ Okay, very cool beautiful city.
 
-7
-00:00:13,320 --> 00:00:18,600
- beautiful city awesome yeah I've only been there like through the airport though
-
-8
-00:00:18,600 --> 00:00:23,600
- So I don't know I don't know too much about it, but uh, yeah, you're not miss not too much. No, fair enough.
-
-9
-00:00:23,839 --> 00:00:25,839
- Awesome, man.
-
-10
-00:00:25,839 --> 00:00:28,160
- Well, I'm glad we can hop on the c-
+4
+00:00:14,169 --> 00:00:18,609
+ Awesome yeah, I've only been there like through the airport though
 

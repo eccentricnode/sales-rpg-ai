@@ -12,6 +12,17 @@ from pathlib import Path
 from openai import OpenAI
 
 
+# Load environment variables from .env file
+env_file = Path(__file__).parent.parent / '.env'
+if env_file.exists():
+    with open(env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ[key.strip()] = value.strip()
+
+
 class TranscriptCapture:
     """Captures transcript output from WhisperLive client."""
 
@@ -160,7 +171,7 @@ If NO objections found, respond with: "NO_OBJECTIONS_DETECTED"
         # Make API call (using free model)
         print("[INFO] Calling OpenRouter API...")
         response = client.chat.completions.create(
-            model="meta-llama/llama-3.2-3b-instruct:free",  # Free tier model
+            model="meta-llama/llama-3.3-70b-instruct:free",  # Free tier model
             messages=[
                 {
                     "role": "user",
@@ -181,7 +192,7 @@ If NO objections found, respond with: "NO_OBJECTIONS_DETECTED"
             "success": True,
             "analysis": analysis,
             "transcript": transcript,
-            "model": "meta-llama/llama-3.2-3b-instruct:free"
+            "model": "meta-llama/llama-3.3-70b-instruct:free"
         }
 
     except Exception as e:
