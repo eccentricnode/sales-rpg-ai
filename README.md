@@ -2,7 +2,7 @@
 
 AI-powered system that listens to sales conversations, detects objections, and suggests responses in real-time.
 
-**Status:** Phase 2 (Real-Time MVP) core implementation complete. Streaming analysis working.
+**Status:** Phase 2 (Real-Time MVP) complete. [View Detailed Status & Roadmap](docs/mvp.md).
 
 ## Architecture
 ```mermaid
@@ -23,7 +23,7 @@ graph TB
         F --> G[OpenRouter API]
         G --> H[Llama 3.3 70B]
         H --> I[Objection Detection]
-    end
+    endMy immediate task is to examine the CHANGELOG.md file. I'll then compare its contents to the docs/mvp.md and README.md files, as the user pointed out potential redundancy. I'm leaning toward a solution where CHANGELOG.md focuses on versions and milestones, while mvp.md details current status, aligning with the user's feedback.
 
     subgraph Output
         I --> J[Response Suggestions]
@@ -306,3 +306,4 @@ flowchart TB
 ## License
 
 MIT
+

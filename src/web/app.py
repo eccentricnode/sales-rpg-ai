@@ -107,7 +107,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "language": "en",
                 "task": "transcribe",
                 "model": "base",
-                "use_vad": True
+                "use_vad": False  # Disable VAD to ensure we get transcripts even if audio is quiet
             }
             await whisper_ws.send(json.dumps(config))
             
@@ -126,7 +126,9 @@ async def websocket_endpoint(websocket: WebSocket):
                                     await websocket.send_json({
                                         "type": "transcript", 
                                         "text": text,
-                                        "is_final": segment.get("is_last", False) # WhisperLive might send this
+                                        "start": segment.get("start", 0),
+                                        "end": segment.get("end", 0),
+                                        "is_final": segment.get("is_last", False)
                                     })
                                     
                                     # Feed to buffer manager

@@ -8,13 +8,8 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Install system dependencies
 # ffmpeg is useful for audio processing if needed
-# git is required for installing dependencies from git repositories
-# portaudio19-dev and build-essential are required for PyAudio
 RUN apt-get update && apt-get install -y \
     ffmpeg \
-    git \
-    portaudio19-dev \
-    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -26,10 +21,10 @@ COPY src/ src/
 COPY .env .
 
 # Install Python dependencies
-# We install directly from pyproject.toml using pip
+# We manually install only the web dependencies to avoid pulling in 
+# heavy ML libraries (torch, whisper-live) required by the CLI tools.
 RUN pip install --upgrade pip && \
-    pip install . && \
-    pip install python-dotenv websockets uvicorn
+    pip install fastapi uvicorn[standard] websockets python-dotenv jinja2 openai python-multipart httpx
 
 # Expose the port the app runs on
 EXPOSE 8080
