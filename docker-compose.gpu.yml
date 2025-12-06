@@ -1,0 +1,10 @@
+services:
+  whisper-live:
+    image: ghcr.io/collabora/whisperlive-gpu:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

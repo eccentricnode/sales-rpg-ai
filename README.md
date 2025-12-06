@@ -32,7 +32,36 @@ graph TB
     end
 ```
 
-## Quick Start
+## Quick Start (Docker)
+
+The easiest way to run the application is using Docker. This sets up both the WhisperLive server and the Web UI.
+
+### Prerequisites
+- Docker & Docker Compose
+- NVIDIA GPU (Optional, but recommended for speed)
+- OpenRouter API Key
+
+### Setup
+
+1. **Clone and Configure**
+   ```bash
+   git clone <repo>
+   cd sales-rpg-ai
+   echo "OPENROUTER_API_KEY=sk-or-v1-your-key-here" > .env
+   ```
+
+2. **Run**
+   ```bash
+   make up
+   ```
+   *This will automatically detect if you have an NVIDIA GPU and configure the containers accordingly.*
+
+3. **Use**
+   Open **http://localhost:8080** in your browser.
+
+---
+
+## Manual Setup (Dev)
 
 ### Prerequisites
 
@@ -42,23 +71,27 @@ graph TB
 
 ### Setup
 ```bash
-# 1. Install dependencies (~3GB download)
-uv sync
+# 1. Install dependencies
+pip install -e .
+pip install python-dotenv websockets uvicorn
 
 # 2. Configure API key
 echo 'OPENROUTER_API_KEY=sk-or-v1-your-key-here' > .env
 
 # 3. Start WhisperLive server (if not running)
+# CPU
+docker run -it -p 9090:9090 ghcr.io/collabora/whisperlive-cpu:latest
+# GPU
 docker run -it --gpus all -p 9090:9090 ghcr.io/collabora/whisperlive-gpu:latest
 
-# 4. Run
-uv run python src/transcribe_and_analyze.py test.mp4
+# 4. Run Web UI
+python src/web/run.py
 ```
 
-## Usage
+## CLI Usage (Legacy)
 ```bash
 # Real-time analysis (streaming, with WhisperLive)
-uv run python src/realtime_transcribe.py path/to/audio.mp4
+python src/realtime_transcribe.py path/to/audio.mp4
 
 # Real-time with verbose output (shows all LLM responses)
 uv run python src/realtime_transcribe.py path/to/audio.mp4 --verbose
@@ -184,14 +217,18 @@ flowchart TD
 - [x] Confidence scoring
 - [x] Test suite
 
-### Phase 2: Real-Time MVP 🔄 In Progress
+### Phase 2: Real-Time MVP ✅ Core Complete
 
-- [x] Live transcript streaming (WhisperLive callback working)
-- [x] Architecture design (dual buffer PRD complete)
-- [ ] DualBufferManager implementation
-- [ ] AnalysisOrchestrator implementation
-- [ ] Chunked analysis (<3s latency)
-- [ ] Real-time microphone input
+- [x] Live transcript streaming (WhisperLive callback)
+- [x] Architecture design (dual buffer PRD)
+- [x] DualBufferManager implementation
+- [x] AnalysisOrchestrator implementation
+- [x] Chunked analysis (~1-3s latency)
+- [x] Integration script (realtime_transcribe.py)
+- [x] Verbose mode for debugging
+- [x] Test script without WhisperLive
+- [ ] Unit tests
+- [ ] Real-time microphone testing
 - [ ] Tkinter desktop GUI
 
 ### Phase 3: Production (Future)

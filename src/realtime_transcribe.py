@@ -184,6 +184,7 @@ class RealtimeObjectionDetector:
     def run_microphone(self) -> None:
         """Run real-time analysis on microphone input."""
         from whisper_live.client import TranscriptionClient
+        import sys
 
         print(f"\n{'='*60}")
         print("REAL-TIME OBJECTION DETECTOR (MICROPHONE)")
@@ -192,24 +193,37 @@ class RealtimeObjectionDetector:
         print(f"Config: {self.config}")
         print(f"{'='*60}")
         print("\nListening... Press Ctrl+C to stop.\n")
+        sys.stdout.flush()
 
         # Start the orchestrator
         self.orchestrator.start()
 
         # Create WhisperLive client
-        client = TranscriptionClient(
-            host=self.host,
-            port=self.port,
-            model="base",
-            log_transcription=False,
-            transcription_callback=self._on_transcript_chunk,
-        )
+        try:
+            client = TranscriptionClient(
+                host=self.host,
+                port=self.port,
+                model="base",
+                log_transcription=False,
+                transcription_callback=self._on_transcript_chunk,
+            )
+        except Exception as e:
+            print(f"\n[ERROR] Failed to connect to WhisperLive: {e}")
+            print(f"Make sure WhisperLive server is running on {self.host}:{self.port}")
+            self.orchestrator.shutdown()
+            return
 
         # Run transcription from microphone
         try:
             client()  # No argument = microphone
         except KeyboardInterrupt:
             print("\n[INFO] Stopped by user")
+        except OSError as e:
+            if "No Default Input Device" in str(e):
+                print("\n[ERROR] No microphone detected.")
+                print("Run --list-devices to see available devices.")
+            else:
+                print(f"\n[ERROR] Audio error: {e}")
 
         # Wait a bit for pending analyses to complete
         print("\n[INFO] Waiting for pending analyses...")
@@ -236,8 +250,35 @@ class RealtimeObjectionDetector:
         print(f"{'='*60}\n")
 
 
+def list_audio_devices():
+    """List available audio input devices."""
+    try:
+        import pyaudio
+        p = pyaudio.PyAudio()
+        print("Available audio input devices:")
+        print("-" * 50)
+        for i in range(p.get_device_count()):
+            info = p.get_device_info_by_index(i)
+            if info["maxInputChannels"] > 0:
+                default = " (default)" if i == p.get_default_input_device_info()["index"] else ""
+                print(f"  [{i}] {info['name']}{default}")
+        p.terminate()
+        print("-" * 50)
+        print("\nUse --device <id> to select a specific device (not yet implemented)")
+    except Exception as e:
+        print(f"ERROR: Could not list audio devices: {e}")
+        print("\nMake sure PortAudio is installed:")
+        print("  Arch Linux: sudo pacman -S portaudio")
+        print("  Ubuntu/Debian: sudo apt-get install portaudio19-dev")
+
+
 def main():
     """Main entry point."""
+    # Handle --list-devices before API key check
+    if "--list-devices" in sys.argv:
+        list_audio_devices()
+        sys.exit(0)
+
     # Check for API key
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
@@ -254,9 +295,11 @@ def main():
         print("Usage:")
         print("  python src/realtime_transcribe.py <audio_file_path> [--verbose]")
         print("  python src/realtime_transcribe.py --mic [--verbose]")
+        print("  python src/realtime_transcribe.py --list-devices")
         print("\nOptions:")
         print("  <audio_file_path>  Path to audio/video file to analyze")
         print("  --mic              Use microphone input for live analysis")
+        print("  --list-devices     List available audio input devices")
         print("  --verbose, -v      Show all LLM responses (not just objections)")
         sys.exit(1)
 

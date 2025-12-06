@@ -1,0 +1,28 @@
+services:
+  # The Transcription Engine
+  whisper-live:
+    image: ghcr.io/collabora/whisperlive-cpu:latest
+    container_name: whisper-live
+    ports:
+      - "9090:9090"
+    command: python3 run_server.py --port 9090 --backend faster_whisper
+    # GPU configuration moved to docker-compose.gpu.yml
+    # By default, this runs on CPU
+
+  # Our Sales AI Web Application
+  sales-ai-web:
+    build: .
+    container_name: sales-ai-web
+    ports:
+      - "8080:8080"
+    environment:
+      - WHISPER_HOST=whisper-live
+      - WHISPER_PORT=9090
+      - HOST=0.0.0.0
+      - PORT=8080
+      # Pass the API key from the host environment
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    depends_on:
+      - whisper-live
+    volumes:
+      - ./src:/app/src  # Enable hot-reloading for development
