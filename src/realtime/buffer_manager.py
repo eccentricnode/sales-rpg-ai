@@ -15,10 +15,10 @@ class BufferConfig:
     """Configuration for dual buffer system."""
 
     # Trigger thresholds
-    time_threshold_seconds: float = 3.0
-    min_completed_segments: int = 2
-    min_characters: int = 150
-    silence_threshold_seconds: float = 1.5
+    time_threshold_seconds: float = 3.0   # Reverted to fast response
+    min_completed_segments: int = 2       # Reverted to fast response
+    min_characters: int = 150             # Reverted to fast response
+    silence_threshold_seconds: float = 1.5 # Reverted to fast response
 
     # Context window
     context_window_seconds: float = 30.0
@@ -26,7 +26,7 @@ class BufferConfig:
 
     # Analysis behavior
     include_incomplete_segment: bool = False
-    sentence_end_triggers: bool = True
+    sentence_end_triggers: bool = True    # Re-enabled for responsiveness
 
 
 @dataclass

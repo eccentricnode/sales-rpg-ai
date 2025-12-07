@@ -43,9 +43,14 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 WHISPER_HOST = os.getenv("WHISPER_HOST", "localhost")
 WHISPER_PORT = int(os.getenv("WHISPER_PORT", "9090"))
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-if not OPENROUTER_API_KEY:
+# LLM Configuration
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openrouter")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+LOCAL_AI_BASE_URL = os.getenv("LOCAL_AI_BASE_URL", "http://localhost:8080/v1")
+LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3-8b")
+
+if LLM_PROVIDER == "openrouter" and not OPENROUTER_API_KEY:
     logger.warning("OPENROUTER_API_KEY not set! Analysis will fail.")
 
 
@@ -86,9 +91,18 @@ async def websocket_endpoint(websocket: WebSocket):
         orchestrator.submit_analysis(active_text, context_text)
 
     # Initialize components
-    # Use a dummy key if not set to prevent crash on init, but it will fail on analyze
-    api_key = OPENROUTER_API_KEY or "dummy"
-    analyzer = StreamingAnalyzer(api_key=api_key)
+    if LLM_PROVIDER == "local":
+        logger.info(f"Using LocalAI at {LOCAL_AI_BASE_URL} with model {LOCAL_AI_MODEL}")
+        analyzer = StreamingAnalyzer(
+            api_key="local", 
+            base_url=LOCAL_AI_BASE_URL,
+            model=LOCAL_AI_MODEL
+        )
+    else:
+        # Use a dummy key if not set to prevent crash on init, but it will fail on analyze
+        api_key = OPENROUTER_API_KEY or "dummy"
+        analyzer = StreamingAnalyzer(api_key=api_key)
+        
     orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_analysis_result)
     buffer_manager = DualBufferManager(on_analysis_ready=on_analysis_ready)
     

@@ -71,12 +71,12 @@ def main():
     analyzer = StreamingAnalyzer(api_key=api_key)
     orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_result)
 
-    # Use config that triggers on sentence endings (quick feedback)
+    # Use "Slow Burn" config to verify batching behavior
     config = BufferConfig(
-        time_threshold_seconds=10.0,  # High so we control triggers
-        min_completed_segments=5,      # High so we control triggers
-        min_characters=500,            # High so we control triggers
-        sentence_end_triggers=True,    # This will be our main trigger
+        time_threshold_seconds=15.0,   # Wait 15s
+        min_completed_segments=10,     # Wait for paragraph
+        min_characters=500,            # Wait for context
+        sentence_end_triggers=False,   # Disable instant triggers
     )
 
     buffer_manager = DualBufferManager(

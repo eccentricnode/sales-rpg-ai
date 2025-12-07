@@ -1,8 +1,13 @@
 # PRD: Dual Buffer Architecture for Real-Time LLM Analysis
 
+## Status
+✅ **Implemented** (Phase 2)
+
 ## Overview
 
 This document describes the implementation plan for intercepting WhisperLive transcript chunks and implementing a dual buffer architecture for batched LLM analysis. This enables real-time objection detection during live sales calls.
+
+**Update (Phase 2 Polish):** This architecture is now augmented by a [Gatekeeper Layer](prd-gatekeeper-rate-limiting.md) to optimize API costs.
 
 ---
 
@@ -198,11 +203,11 @@ Analysis is triggered when ANY of these conditions are met:
 
 | Condition | Default Value | Rationale |
 |-----------|---------------|-----------|
-| Time elapsed since last analysis | 3 seconds | Ensures responsiveness |
-| Completed segments accumulated | 2 segments | Natural speech boundaries |
-| Character count in active buffer | 150 chars | Handles fast speech |
-| Sentence-ending punctuation detected | `.` `?` `!` | Natural analysis points |
-| Silence detected (gap in segments) | 1.5 seconds | Speaker pauses |
+| Time elapsed since last analysis | 15 seconds | "Slow Burn" batching for context |
+| Completed segments accumulated | 10 segments | Wait for full paragraph |
+| Character count in active buffer | 500 chars | Substantial context chunk |
+| Sentence-ending punctuation detected | **Disabled** | Avoid triggering on every sentence |
+| Silence detected (gap in segments) | 2.0 seconds | Significant pause only |
 
 ### State Machine
 

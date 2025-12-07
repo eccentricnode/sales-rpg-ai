@@ -227,18 +227,32 @@ flowchart TD
 - [x] Integration script (realtime_transcribe.py)
 - [x] Verbose mode for debugging
 - [x] Test script without WhisperLive
-- [ ] Unit tests
-- [ ] Real-time microphone testing
-- [ ] Tkinter desktop GUI
+- [x] Web UI (FastAPI + WebSocket)
+- [x] Docker Deployment (CPU/GPU auto-detect)
+- [x] "Gatekeeper" Rate Limiting (Cost Optimization)
 
-### Phase 3: Production (Future)
+### Phase 3: Enterprise & LocalAI (Next)
 
-- [ ] Invisible overlay UI
-- [ ] Ultra-low latency (<150ms)
-- [ ] Custom response training
-- [ ] Cloud deployment
+- [ ] **LocalAI Integration**: Replace OpenRouter with a local LLM (e.g., Mistral/Phi-3) running in Docker.
+- [ ] **Invisible Overlay UI**: Desktop widget that floats over Zoom/Teams.
+- [ ] **Ultra-low latency**: Optimize local networking for <150ms response.
+- [ ] **Enterprise Deployment**: Self-hosted container stack (WhisperLive + LocalAI + App).
 
-See `docs/mvp.md` for detailed phase specifications.
+## Deployment Strategy
+
+The application supports two deployment modes to fit different business models:
+
+### 1. SaaS / Pro Tier ($20/mo)
+- **Transcription**: Hosted WhisperLive (or local).
+- **Intelligence**: OpenRouter API (Llama 3.3 70B).
+- **Cost Control**: Uses "Gatekeeper" logic to only analyze text containing objection keywords (Price, Time, etc.) and enforces a cooldown.
+- **Pros**: No high-end hardware required for the user.
+
+### 2. Enterprise / On-Prem Tier
+- **Transcription**: Local WhisperLive (GPU).
+- **Intelligence**: **LocalAI** running a quantized model (e.g., Mistral 7B) inside the Docker network.
+- **Privacy**: 100% local processing. No audio or text leaves the machine.
+- **Pros**: Unlimited analysis, zero latency, total privacy.
 
 ## Development
 

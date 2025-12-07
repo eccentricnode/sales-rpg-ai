@@ -87,6 +87,10 @@ class StreamingAnalyzer:
             base_url: API endpoint URL
             model: Model identifier to use
         """
+        # If using LocalAI, the API key is ignored but required by SDK
+        if "local-ai" in base_url or "localhost" in base_url:
+            api_key = "sk-local-ai-placeholder"
+            
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.model = model
 
@@ -111,6 +115,7 @@ class StreamingAnalyzer:
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
             temperature=0.3,  # Lower temperature for more consistent analysis
+            stop=["<|eot_id|>", "<|end_of_text|>"],  # Explicitly stop generation
         )
 
         # Handle empty/null responses (can happen with rate limiting)

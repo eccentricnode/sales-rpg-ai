@@ -10,15 +10,20 @@ help: ## Show this help message
 	@echo '  make build   Rebuild the web application container'
 	@echo '  make clean   Remove containers and artifacts'
 
-up: ## Start all services (auto-detects GPU)
+up: ## Start all services (LocalAI + GPU Default)
 	@if command -v nvidia-smi > /dev/null 2>&1; then \
-		echo "NVIDIA GPU detected. Starting with GPU support..."; \
+		echo "NVIDIA GPU detected. Starting LocalAI with GPU support..."; \
 		docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d; \
 	else \
-		echo "No NVIDIA GPU detected. Starting in CPU mode..."; \
+		echo "No NVIDIA GPU detected. Starting LocalAI in CPU mode..."; \
 		docker compose up -d; \
 	fi
-	@echo "Sales AI is running at http://localhost:8080"
+	@echo "Sales AI (Local Mode) is running at http://localhost:8080"
+
+up-cloud: ## Start services with OpenRouter (Cloud Mode)
+	@echo "Starting Sales AI in Cloud Mode (OpenRouter)..."
+	docker compose -f docker-compose.yml -f docker-compose.cloud.yml up -d sales-ai-web whisper-live
+	@echo "Sales AI (Cloud Mode) is running at http://localhost:8080"
 
 down: ## Stop all services
 	docker compose down

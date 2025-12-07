@@ -8,3 +8,13 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+
+  local-ai:
+    image: localai/localai:v2.24.0-cublas-cuda12
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

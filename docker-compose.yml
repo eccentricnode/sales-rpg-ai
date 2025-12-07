@@ -22,7 +22,25 @@ services:
       - PORT=8080
       # Pass the API key from the host environment
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # Local AI Configuration
+      - LLM_PROVIDER=local
+      - LOCAL_AI_BASE_URL=http://local-ai:8080/v1
+      - LOCAL_AI_MODEL=llama3-8b
     depends_on:
       - whisper-live
     volumes:
       - ./src:/app/src  # Enable hot-reloading for development
+
+  # Local Inference Engine
+  local-ai:
+    image: localai/localai:v2.24.0-ffmpeg-core
+    container_name: local-ai
+    ports:
+      - "8081:8080"
+    environment:
+      - MODELS_PATH=/build/models
+      - DEBUG=true
+    volumes:
+      - ./models:/build/models:cached
+    command: ["/usr/bin/local-ai"]
+

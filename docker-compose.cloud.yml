@@ -1,0 +1,6 @@
+services:
+  sales-ai-web:
+    environment:
+      - LLM_PROVIDER=openrouter
+      # Unset LocalAI vars to be safe (though app logic handles it)
+      - LOCAL_AI_BASE_URL=

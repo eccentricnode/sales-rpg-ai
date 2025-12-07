@@ -1,5 +1,8 @@
 # PRD: Web-Based UI with Microphone Input
 
+## Status
+✅ **Implemented** (Phase 2)
+
 ## Problem
 
 Testing the Sales AI application currently requires:
@@ -56,7 +59,7 @@ Build a **web-based UI** that:
 │  │         ▼                                                  │ │
 │  │  ┌─────────────┐                                           │ │
 │  │  │  WebSocket  │ Audio chunks (binary)                     │ │
-│  │  │  to :9090   │─────────────────────────────┐             │ │
+│  │  │  to :8080   │─────────────────────────────┐             │ │
 │  │  └─────────────┘                             │             │ │
 │  └──────────────────────────────────────────────│─────────────┘ │
 └─────────────────────────────────────────────────│───────────────┘
@@ -69,10 +72,10 @@ Build a **web-based UI** that:
 │  │     :9090       │◄───│            :8080                    ││
 │  │                 │    │                                     ││
 │  │  Transcription  │    │  FastAPI + Jinja2 + HTMX            ││
-│  │  via WebSocket  │───►│  - Serves UI                        ││
-│  │                 │    │  - Receives transcripts             ││
-│  └─────────────────┘    │  - Runs objection detection         ││
-│                         │  - Pushes updates via SSE/WS        ││
+│  │  via WebSocket  │───►│  - Proxy to WhisperLive             ││
+│  │                 │    │  - Buffers Transcript               ││
+│  └─────────────────┘    │  - Calls LocalAI / OpenRouter       ││
+│                         │  - Pushes updates via WS            ││
 │                         └─────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
