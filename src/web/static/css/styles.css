@@ -1,0 +1,217 @@
+:root {
+  /* Backgrounds */
+  --bg-primary: #2E3440;
+  --bg-secondary: #3B4252;
+  --bg-elevated: #434C5E;
+  --bg-highlight: #4C566A;
+
+  /* Text */
+  --text-primary: #ECEFF4;
+  --text-secondary: #D8DEE9;
+  --text-muted: #E5E9F0;
+
+  /* Accent */
+  --accent-primary: #88C0D0;
+  --accent-hover: #8FBCBB;
+  --accent-deep: #5E81AC;
+
+  /* Status */
+  --status-price: #BF616A;
+  --status-time: #D08770;
+  --status-decision: #EBCB8B;
+  --status-success: #A3BE8C;
+  --status-other: #B48EAD;
+
+  /* Speakers */
+  --speaker-salesperson: #81A1C1;
+  --speaker-prospect: #D08770;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Layout Utilities */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .grid-cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.flex { display: flex; }
+.justify-center { justify-content: center; }
+.items-center { align-items: center; }
+.gap-4 { gap: 1rem; }
+.mb-8 { margin-bottom: 2rem; }
+.text-center { text-align: center; }
+.hidden { display: none; }
+
+/* Typography */
+h1 { color: var(--text-primary); font-size: 2.5rem; margin-bottom: 0.5rem; }
+h2 { color: var(--text-primary); font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--bg-highlight); padding-bottom: 0.5rem; }
+p { color: var(--text-secondary); }
+
+/* Buttons */
+.btn {
+    background-color: var(--accent-primary);
+    color: var(--bg-primary);
+    font-weight: bold;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.btn-stop {
+    background-color: var(--status-price);
+    color: var(--text-primary);
+}
+
+.btn-stop:hover {
+    background-color: #a6545c; /* Slightly darker red */
+}
+
+/* Panels */
+.panel {
+    background-color: var(--bg-secondary);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Transcript */
+.transcript-container {
+    height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.transcript-line {
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  background: var(--bg-elevated); /* Using elevated for contrast against secondary panel */
+  color: var(--text-secondary);
+}
+
+.transcript-salesperson {
+  background: rgba(129, 161, 193, 0.1);
+  border-left-color: var(--speaker-salesperson);
+}
+
+.transcript-prospect {
+  background: rgba(208, 135, 112, 0.1);
+  border-left-color: var(--speaker-prospect);
+}
+
+/* Objection Badges */
+.objection-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.objection-price {
+  background: rgba(191, 97, 106, 0.2);
+  color: var(--status-price);
+  border: 1px solid var(--status-price);
+}
+
+.objection-time {
+  background: rgba(208, 135, 112, 0.2);
+  color: var(--status-time);
+  border: 1px solid var(--status-time);
+}
+
+.objection-decision {
+  background: rgba(235, 203, 139, 0.2);
+  color: var(--status-decision);
+  border: 1px solid var(--status-decision);
+}
+
+.objection-other {
+  background: rgba(180, 142, 173, 0.2);
+  color: var(--status-other);
+  border: 1px solid var(--status-other);
+}
+
+/* Suggestion Cards */
+.suggestion-card {
+  background: var(--bg-primary); /* Contrast against panel */
+  border: 1px solid var(--bg-highlight);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+}
+
+.suggestion-card:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.suggestion-number {
+  color: var(--accent-primary);
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+/* Confidence Indicators */
+.confidence-high { color: var(--status-success); }
+.confidence-medium { color: var(--status-decision); }
+.confidence-low { color: var(--status-price); }
+
+/* Animations */
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.objection-panel {
+    animation: slideIn 0.5s ease-out;
+    margin-bottom: 1rem;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-primary); 
+}
+::-webkit-scrollbar-thumb {
+    background: var(--bg-highlight); 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary); 
+}

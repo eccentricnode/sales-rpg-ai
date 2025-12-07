@@ -23,35 +23,33 @@ class AudioClient {
             this.connectWebSocket();
             
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Load the AudioWorklet processor
+            try {
+                await this.audioContext.audioWorklet.addModule('/static/js/audio-processor.js');
+            } catch (e) {
+                console.error("Failed to load audio processor:", e);
+                throw e;
+            }
+            
             const source = this.audioContext.createMediaStreamSource(stream);
+            this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
             
-            // Whisper expects 16kHz audio
-            const targetSampleRate = 16000;
-            
-            // Use ScriptProcessor (deprecated but widely supported) for raw audio access
-            // Buffer size 4096 provides ~0.25s latency at 16kHz, or ~0.09s at 48kHz
-            const bufferSize = 4096; 
-            this.processor = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
-            
-            source.connect(this.processor);
-            this.processor.connect(this.audioContext.destination);
-            
-            this.processor.onaudioprocess = (e) => {
+            // Handle messages from the processor (audio data)
+            this.workletNode.port.onmessage = (event) => {
                 if (!this.isRecording || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
-
-                const inputData = e.inputBuffer.getChannelData(0);
                 
-                // Resample to 16kHz if necessary
-                let outputData = inputData;
-                if (this.audioContext.sampleRate !== targetSampleRate) {
-                    outputData = this.resample(inputData, this.audioContext.sampleRate, targetSampleRate);
-                }
-                
-                // Convert to Float32 bytes (WhisperLive expects raw float32)
-                // We create a copy to ensure we aren't sending shared memory
-                const float32Data = new Float32Array(outputData);
+                const float32Data = event.data;
                 this.socket.send(float32Data.buffer);
             };
+            
+            source.connect(this.workletNode);
+            
+            // Connect to destination via a muted gain node to keep the graph alive
+            const gainNode = this.audioContext.createGain();
+            gainNode.gain.value = 0;
+            this.workletNode.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
 
             this.isRecording = true;
             this.updateUI(true);
@@ -62,34 +60,11 @@ class AudioClient {
         }
     }
 
-    // Simple linear interpolation resampler
-    resample(data, oldSampleRate, newSampleRate) {
-        if (oldSampleRate === newSampleRate) return data;
-        
-        const ratio = oldSampleRate / newSampleRate;
-        const newLength = Math.round(data.length / ratio);
-        const result = new Float32Array(newLength);
-        
-        for (let i = 0; i < newLength; i++) {
-            const position = i * ratio;
-            const index = Math.floor(position);
-            const fraction = position - index;
-            
-            if (index + 1 < data.length) {
-                result[i] = data[index] * (1 - fraction) + data[index + 1] * fraction;
-            } else {
-                result[i] = data[index];
-            }
-        }
-        
-        return result;
-    }
-
     stopRecording() {
         if (this.isRecording) {
-            if (this.processor) {
-                this.processor.disconnect();
-                this.processor = null;
+            if (this.workletNode) {
+                this.workletNode.disconnect();
+                this.workletNode = null;
             }
             if (this.audioContext) {
                 this.audioContext.close();
@@ -98,7 +73,7 @@ class AudioClient {
             
             this.isRecording = false;
             this.updateUI(false);
-            this.transcriptDiv.innerHTML += '<p class="text-red-500 italic text-sm mt-2">Stopped listening.</p>';
+            this.transcriptDiv.innerHTML += '<p style="color: var(--status-price); font-style: italic; margin-top: 0.5rem;">Stopped listening.</p>';
             
             if (this.socket) {
                 this.socket.close();
@@ -114,7 +89,7 @@ class AudioClient {
         
         this.socket.onopen = () => {
             console.log("WebSocket connected");
-            this.transcriptDiv.innerHTML = '<p class="text-green-500 italic">Connected! Listening...</p>';
+            this.transcriptDiv.innerHTML = '<p style="color: var(--status-success); font-style: italic;">Connected! Listening...</p>';
         };
         
         this.socket.onmessage = (event) => {
@@ -125,6 +100,8 @@ class AudioClient {
                 this.handleTranscript(data);
             } else if (data.type === 'objection') {
                 this.handleObjection(data);
+            } else if (data.type === 'error') {
+                this.handleError(data);
             }
         };
         
@@ -140,9 +117,9 @@ class AudioClient {
         let p = document.getElementById(segmentId);
 
         if (!p) {
-            p = document.createElement('p');
+            p = document.createElement('div');
             p.id = segmentId;
-            p.classList.add('text-gray-500', 'transition-colors', 'duration-200');
+            p.classList.add('transcript-line');
             this.transcriptDiv.appendChild(p);
         }
 
@@ -151,8 +128,7 @@ class AudioClient {
         // If it looks like a complete sentence, darken it
         // We don't rely solely on is_final because it can be flaky
         if (data.is_final || /[.!?]$/.test(data.text)) {
-            p.classList.remove('text-gray-500');
-            p.classList.add('text-gray-800');
+            p.style.color = 'var(--text-primary)';
         }
         
         this.transcriptDiv.scrollTop = this.transcriptDiv.scrollHeight;
@@ -160,13 +136,31 @@ class AudioClient {
 
     handleObjection(data) {
         const div = document.createElement('div');
-        div.className = 'bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 objection-alert';
+        div.className = 'suggestion-card objection-panel';
         div.innerHTML = `
-            <p class="font-bold">Objection Detected!</p>
-            <p class="italic">"${data.text}"</p>
-            <div class="mt-2 bg-white p-2 rounded border border-red-200">
-                <p class="font-semibold text-sm text-gray-600">Suggested Response:</p>
-                <p>${data.response}</p>
+            <div style="margin-bottom: 0.5rem;">
+                <span class="objection-badge objection-price">Objection Detected</span>
+            </div>
+            <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 0.5rem;">"${data.text}"</p>
+            <div style="border-top: 1px solid var(--bg-highlight); padding-top: 0.5rem; margin-top: 0.5rem;">
+                <p style="font-weight: 600; font-size: 0.875rem; color: var(--accent-primary); margin-bottom: 0.25rem;">Suggested Response:</p>
+                <p style="color: var(--text-primary);">${data.response}</p>
+            </div>
+        `;
+        this.objectionsDiv.prepend(div);
+    }
+
+    handleError(data) {
+        const div = document.createElement('div');
+        div.className = 'suggestion-card objection-panel';
+        div.style.borderColor = 'var(--status-price)';
+        div.innerHTML = `
+            <div style="margin-bottom: 0.5rem;">
+                <span class="objection-badge" style="background: rgba(191, 97, 106, 0.2); color: var(--status-price); border: 1px solid var(--status-price);">System Error</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">An error occurred during analysis:</p>
+            <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; color: var(--status-price);">
+                ${data.error || "Unknown error"}
             </div>
         `;
         this.objectionsDiv.prepend(div);

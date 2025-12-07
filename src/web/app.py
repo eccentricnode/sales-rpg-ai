@@ -81,6 +81,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "type": "objection" if result.has_objection else "error",
                 "text": result.active_text,
                 "response": result.raw_response,
+                "error": result.error,
                 "latency": result.latency_ms
             }
             # Schedule sending on the main event loop

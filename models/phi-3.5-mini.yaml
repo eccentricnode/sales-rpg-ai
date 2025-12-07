@@ -11,7 +11,7 @@ parameters:
     - "<|assistant|>"
 
 backend: llama-cpp
-context_size: 8192
+context_size: 4096
 
 download_files:
   - filename: phi-3.5-mini-instruct.gguf
