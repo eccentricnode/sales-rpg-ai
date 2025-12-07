@@ -8,40 +8,18 @@ in a background thread and delivering results via callback.
 import queue
 import threading
 import time
+import json
 from dataclasses import dataclass
 from typing import Callable, Optional
 
 from openai import OpenAI
 
-
-STREAMING_ANALYSIS_PROMPT = """You are analyzing a LIVE sales conversation for objections.
-
-CONTEXT (previous conversation):
-{context_text}
-
-NEW CONTENT (analyze this for objections):
-{active_text}
-
-IMPORTANT:
-- Focus analysis on NEW CONTENT only
-- Use CONTEXT to understand the conversation flow
-- The NEW CONTENT may be mid-sentence or incomplete
-- Only flag HIGH confidence objections (avoid false positives)
-- If NEW CONTENT is too short/unclear, respond with "INSUFFICIENT_CONTENT"
-
-For each objection found in NEW CONTENT:
-1. TYPE: PRICE | TIME | DECISION_MAKER | OTHER
-2. CONFIDENCE: HIGH | MEDIUM (skip LOW - too noisy for real-time)
-3. QUOTE: Exact words from NEW CONTENT
-4. RESPONSE: One best response suggestion (keep it brief for real-time display)
-
-Format:
-OBJECTION: [TYPE] | [CONFIDENCE]
-> "[quote]"
-SUGGEST: [response]
-
-If no objections: "NO_OBJECTIONS"
-"""
+from .prompts import (
+    LOCAL_SYSTEM_PROMPT,
+    LOCAL_USER_TEMPLATE,
+    CLOUD_SYSTEM_PROMPT,
+    CLOUD_USER_TEMPLATE,
+)
 
 
 @dataclass
@@ -90,6 +68,13 @@ class StreamingAnalyzer:
         # If using LocalAI, the API key is ignored but required by SDK
         if "local-ai" in base_url or "localhost" in base_url:
             api_key = "sk-local-ai-placeholder"
+            self.is_local = True
+            self.system_prompt = LOCAL_SYSTEM_PROMPT
+            self.user_template = LOCAL_USER_TEMPLATE
+        else:
+            self.is_local = False
+            self.system_prompt = CLOUD_SYSTEM_PROMPT
+            self.user_template = CLOUD_USER_TEMPLATE
             
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.model = model
@@ -105,17 +90,23 @@ class StreamingAnalyzer:
         Returns:
             Raw LLM response string
         """
-        prompt = STREAMING_ANALYSIS_PROMPT.format(
+        user_content = self.user_template.format(
             active_text=active_text,
             context_text=context_text if context_text else "(conversation just started)",
         )
 
+        # Adjust stop tokens based on provider
+        stop_tokens = ["<|eot_id|>", "<|end_of_text|>", "\n", "```"] if self.is_local else None
+
         response = self.client.chat.completions.create(
             model=self.model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": user_content}
+            ],
             max_tokens=500,
-            temperature=0.3,  # Lower temperature for more consistent analysis
-            stop=["<|eot_id|>", "<|end_of_text|>"],  # Explicitly stop generation
+            temperature=0.1,  # Very low temperature for strict instruction following
+            stop=stop_tokens,
         )
 
         # Handle empty/null responses (can happen with rate limiting)
@@ -270,11 +261,37 @@ class AnalysisOrchestrator:
             )
             self.total_completed += 1
 
-            # Simple check for objection presence
-            has_objection = (
-                "OBJECTION:" in raw_response
-                and "NO_OBJECTIONS" not in raw_response
-            )
+            # Parse JSON response
+            try:
+                # Clean up response (remove markdown code blocks if present)
+                clean_response = raw_response.strip()
+                if clean_response.startswith("```json"):
+                    clean_response = clean_response[7:]
+                if clean_response.startswith("```"):
+                    clean_response = clean_response[3:]
+                if clean_response.endswith("```"):
+                    clean_response = clean_response[:-3]
+                
+                # Extract JSON object if there's extra text
+                start_idx = clean_response.find('{')
+                end_idx = clean_response.rfind('}')
+                if start_idx != -1 and end_idx != -1:
+                    clean_response = clean_response[start_idx : end_idx + 1]
+
+                data = json.loads(clean_response.strip())
+                has_objection = data.get("objection", False)
+            except json.JSONDecodeError:
+                # Fallback: try to find JSON-like structure
+                if '"objection": true' in raw_response:
+                    has_objection = True
+                elif '"objection": false' in raw_response:
+                    has_objection = False
+                else:
+                    # Legacy fallback
+                    has_objection = (
+                        "OBJECTION:" in raw_response
+                        and "NO_OBJECTIONS" not in raw_response
+                    )
 
         except Exception as e:
             error = str(e)

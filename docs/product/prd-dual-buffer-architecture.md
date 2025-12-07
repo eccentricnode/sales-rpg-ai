@@ -563,7 +563,7 @@ src/
 │   ├── analysis_orchestrator.py   # AnalysisOrchestrator
 │   └── streaming_analyzer.py      # Modified prompts for streaming
 └── ui/
-    └── (Phase 2 - Tkinter UI)
+    └── (Phase 2 - Web UI)
 ```
 
 ---

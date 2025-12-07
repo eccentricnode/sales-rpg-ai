@@ -25,6 +25,10 @@ up-cloud: ## Start services with OpenRouter (Cloud Mode)
 	docker compose -f docker-compose.yml -f docker-compose.cloud.yml up -d sales-ai-web whisper-live
 	@echo "Sales AI (Cloud Mode) is running at http://localhost:8080"
 
+test-local: ## Run the realtime flow test against LocalAI
+	@echo "Running Realtime Flow Test (LocalAI)..."
+	LLM_PROVIDER=local uv run src/test_realtime_flow.py
+
 down: ## Stop all services
 	docker compose down
 

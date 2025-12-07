@@ -1,0 +1,26 @@
+name: phi-3.5-mini
+parameters:
+  model: phi-3.5-mini-instruct.gguf
+  gpu_layers: 100
+  threads: 4
+  batch_size: 64
+  f16: true
+  stop:
+    - "<|end|>"
+    - "<|user|>"
+    - "<|assistant|>"
+
+backend: llama-cpp
+context_size: 8192
+
+download_files:
+  - filename: phi-3.5-mini-instruct.gguf
+    uri: https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q6_K.gguf
+
+template:
+  chat: |
+    <|user|>
+    {{.Input}} <|end|>
+    <|assistant|>
+  completion: |
+    {{.Input}}

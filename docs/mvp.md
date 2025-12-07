@@ -40,11 +40,18 @@
 | Sentence ending | `. ? !` | Natural analysis points |
 | Silence detected | 1.5 seconds | Speaker pauses |
 
-### Measured Performance
+### Measured Performance (Updated Dec 2025)
 
-- LLM latency: ~1-3 seconds per analysis
-- Objection types correctly identified: PRICE, TIME, DECISION_MAKER
-- Context preservation working across triggers
+- **Cloud (OpenRouter)**: ~3-5 seconds latency (UI response).
+- **Local (LocalAI/GPU)**: ~15 seconds round trip (Acceptable for local inference).
+- **Objection Accuracy**: High. Correctly identifies PRICE, TIME, DECISION_MAKER.
+- **Prompt Strategy**: "Single-line JSON" + Strict Stop Tokens (`\n`, ` ``` `) eliminated hallucinations.
+
+### ⚠️ Known Issues & Future Improvements
+
+- **Microphone Cutoff**: User audio sometimes cuts off mid-sentence due to Whisper VAD/segmentation.
+  - *Fix*: Monitor Whisper output stream or implement client-side VAD to ensure complete sentences are captured.
+- **Latency Optimization**: 15s is usable for MVP, but could be faster with smaller quantized models (e.g., Llama-3-8B-Instruct-v2 4-bit).
 
 ## 🚧 Phase 2 Remaining: UI & Polish
 
@@ -105,13 +112,15 @@
 - AnalysisOrchestrator for async LLM calls
 - StreamingAnalyzer with optimized prompts
 - Integration script with verbose mode
+- Real-time microphone testing
 
 ### 🚧 Phase 2 Polish: UI & Testing (IN PROGRESS)
+
 - Unit tests
-- Real-time microphone testing
-- Tkinter UI for visual display
+- Web UI for visual display (Replaces Tkinter)
 
 ### 🔮 Phase 3: Production (Future)
+
 - Invisible overlay UI
 - Ultra-low latency optimization
 - Custom response training
@@ -120,4 +129,4 @@
 
 ---
 
-**Current Status**: Phase 2 core complete! Real-time streaming analysis working. UI remaining.
+**Current Status**: Phase 2 core complete! Real-time streaming analysis working. Web UI in progress.

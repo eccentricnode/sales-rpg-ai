@@ -20,15 +20,15 @@ graph TB
     end
 
     subgraph Analysis
-        F --> G[OpenRouter API]
-        G --> H[Llama 3.3 70B]
+        F --> G[OpenRouter API / LocalAI]
+        G --> H[Llama 3.3 70B / Phi-3.5]
         H --> I[Objection Detection]
     endMy immediate task is to examine the CHANGELOG.md file. I'll then compare its contents to the docs/mvp.md and README.md files, as the user pointed out potential redundancy. I'm leaning toward a solution where CHANGELOG.md focuses on versions and milestones, while mvp.md details current status, aligning with the user's feedback.
 
     subgraph Output
         I --> J[Response Suggestions]
         J --> K[Console Output]
-        J -.->|Phase 2| L[Tkinter GUI]
+        J -.->|Phase 2| L[Web UI]
     end
 ```
 

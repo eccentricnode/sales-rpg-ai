@@ -68,15 +68,30 @@ def main():
         print("=" * 70 + "\n")
 
     # Create components
-    analyzer = StreamingAnalyzer(api_key=api_key)
+    llm_provider = os.getenv("LLM_PROVIDER", "openrouter")
+    # Default to 8081 for host-based testing (matches docker-compose port mapping)
+    local_ai_url = os.getenv("LOCAL_AI_BASE_URL", "http://localhost:8081/v1")
+    local_ai_model = os.getenv("LOCAL_AI_MODEL", "phi-3.5-mini")
+
+    if llm_provider == "local":
+        print(f"Using LocalAI at {local_ai_url} with model {local_ai_model}")
+        analyzer = StreamingAnalyzer(
+            api_key="local",
+            base_url=local_ai_url,
+            model=local_ai_model
+        )
+    else:
+        print("Using OpenRouter")
+        analyzer = StreamingAnalyzer(api_key=api_key)
+
     orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_result)
 
-    # Use "Slow Burn" config to verify batching behavior
+    # Use "Fast Response" config for testing
     config = BufferConfig(
-        time_threshold_seconds=15.0,   # Wait 15s
-        min_completed_segments=10,     # Wait for paragraph
-        min_characters=500,            # Wait for context
-        sentence_end_triggers=False,   # Disable instant triggers
+        time_threshold_seconds=1.0,    # Fast trigger
+        min_completed_segments=1,      # Trigger on every segment
+        min_characters=10,             # Low char count
+        sentence_end_triggers=True,    # Trigger on punctuation
     )
 
     buffer_manager = DualBufferManager(

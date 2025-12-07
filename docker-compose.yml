@@ -25,7 +25,7 @@ services:
       # Local AI Configuration
       - LLM_PROVIDER=local
       - LOCAL_AI_BASE_URL=http://local-ai:8080/v1
-      - LOCAL_AI_MODEL=llama3-8b
+      - LOCAL_AI_MODEL=phi-3.5-mini
     depends_on:
       - whisper-live
     volumes:
@@ -43,4 +43,5 @@ services:
     volumes:
       - ./models:/build/models:cached
     command: ["/usr/bin/local-ai"]
+
 

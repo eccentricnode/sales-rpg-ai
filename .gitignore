@@ -6,3 +6,5 @@ __pycache__/
 *.srt
 .env
 *.gguf
+models/*
+!models/phi-3.5-mini.yaml
