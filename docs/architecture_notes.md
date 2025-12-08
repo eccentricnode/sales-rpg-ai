@@ -54,3 +54,59 @@ The `AnalysisOrchestrator` automatically detects the provider (`localhost` vs re
 - **Status**: Solved (Dec 2025).
 - **Action**: Switched from Llama 3 8B (~15s) to Phi-3.5 Mini (<1s).
 - **Result**: Real-time performance is now viable on consumer GPUs.
+
+## 4. System Architecture & Data Flow
+
+The application follows a **Hub-and-Spoke** architecture where the FastAPI backend acts as the central orchestrator.
+
+### Components
+
+1.  **Frontend (Browser)**:
+    *   **Audio Capture**: Uses `AudioWorklet` (background thread) to capture raw PCM audio at 16kHz.
+    *   **Communication**: Sends audio binary data over WebSocket to FastAPI. Receives JSON events (transcripts, objections) to update the DOM.
+    *   **Design**: "Nord" theme, vanilla JS, no build step required.
+
+2.  **Backend (FastAPI)**:
+    *   **WebSocket Proxy**: Receives audio from browser, forwards to WhisperLive.
+    *   **Orchestrator**: Receives text from WhisperLive, buffers it via `DualBufferManager`.
+    *   **Analyzer**: Triggers `StreamingAnalyzer` when buffer conditions are met (e.g., sentence end).
+
+3.  **Transcription Service (WhisperLive)**:
+    *   **Role**: Dedicated container running Faster-Whisper.
+    *   **Protocol**: WebSocket.
+    *   **Output**: Real-time text segments with timestamps.
+
+4.  **Inference Service (LocalAI)**:
+    *   **Role**: Dedicated container running the LLM (Phi-3.5-mini).
+    *   **Protocol**: OpenAI-compatible REST API.
+    *   **Output**: JSON analysis of the sales conversation.
+
+### Data Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser (JS/AudioWorklet)
+    participant FastAPI (Orchestrator)
+    participant WhisperLive (Container)
+    participant LocalAI (Container)
+
+    User->>Browser: Speaks
+    Browser->>FastAPI: Stream Audio (WebSocket)
+    FastAPI->>WhisperLive: Forward Audio
+    WhisperLive-->>FastAPI: Transcript Segment ("The price is too high")
+    
+    Note over FastAPI: DualBufferManager accumulates text
+    
+    FastAPI->>FastAPI: Check Trigger (Sentence End?)
+    
+    alt Trigger Condition Met
+        FastAPI->>LocalAI: POST /v1/chat/completions (Prompt + Context)
+        LocalAI-->>FastAPI: JSON Response ({ "objection": "PRICE", ... })
+        FastAPI-->>Browser: WebSocket Event ("objection")
+        Browser-->>User: Display Objection Card
+    else Buffering
+        FastAPI-->>Browser: WebSocket Event ("transcript")
+        Browser-->>User: Update Transcript UI
+    end
+```

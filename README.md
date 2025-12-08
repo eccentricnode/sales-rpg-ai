@@ -7,29 +7,27 @@ AI-powered system that listens to sales conversations, detects objections, and s
 ## Architecture
 ```mermaid
 graph TB
-    subgraph Input
-        A[Audio File] --> B[WhisperLive Client]
-        M[Microphone] -.->|Phase 2| B
+    subgraph Frontend
+        Browser[Web Browser (AudioWorklet)]
     end
 
-    subgraph Transcription
-        B --> C[WebSocket Connection]
-        C --> D[WhisperLive Server]
-        D --> E[Whisper Base Model]
-        E --> F[Transcript Callback]
+    subgraph Backend
+        FastAPI[FastAPI Server]
+        Buffer[DualBufferManager]
     end
 
-    subgraph Analysis
-        F --> G[OpenRouter API / LocalAI]
-        G --> H[Llama 3.3 70B / Phi-3.5]
-        H --> I[Objection Detection]
-    endMy immediate task is to examine the CHANGELOG.md file. I'll then compare its contents to the docs/mvp.md and README.md files, as the user pointed out potential redundancy. I'm leaning toward a solution where CHANGELOG.md focuses on versions and milestones, while mvp.md details current status, aligning with the user's feedback.
-
-    subgraph Output
-        I --> J[Response Suggestions]
-        J --> K[Console Output]
-        J -.->|Phase 2| L[Web UI]
+    subgraph Services
+        Whisper[WhisperLive (Docker)]
+        LocalAI[LocalAI (Phi-3.5-mini)]
     end
+
+    Browser -- Audio Stream (WS) --> FastAPI
+    FastAPI -- Forward Audio --> Whisper
+    Whisper -- Transcript --> FastAPI
+    FastAPI -- Text --> Buffer
+    Buffer -- Trigger Analysis --> LocalAI
+    LocalAI -- JSON Response --> FastAPI
+    FastAPI -- Objection Event (WS) --> Browser
 ```
 
 ## Quick Start (Docker)
@@ -217,7 +215,7 @@ flowchart TD
 - [x] Confidence scoring
 - [x] Test suite
 
-### Phase 2: Real-Time MVP ✅ Core Complete
+### Phase 2: Real-Time MVP ✅ Complete
 
 - [x] Live transcript streaming (WhisperLive callback)
 - [x] Architecture design (dual buffer PRD)
@@ -230,10 +228,11 @@ flowchart TD
 - [x] Web UI (FastAPI + WebSocket)
 - [x] Docker Deployment (CPU/GPU auto-detect)
 - [x] "Gatekeeper" Rate Limiting (Cost Optimization)
+- [x] **LocalAI Integration**: Replaced OpenRouter with local LLM (Phi-3.5-mini) running in Docker.
 
-### Phase 3: Enterprise & LocalAI (Next)
+### Phase 3: Context & Intelligence (Next)
 
-- [ ] **LocalAI Integration**: Replace OpenRouter with a local LLM (e.g., Mistral/Phi-3) running in Docker.
+- [ ] **Conversation State Manager**: Track sales phases (Intro, Discovery, Closing).
 - [ ] **Invisible Overlay UI**: Desktop widget that floats over Zoom/Teams.
 - [ ] **Ultra-low latency**: Optimize local networking for <150ms response.
 - [ ] **Enterprise Deployment**: Self-hosted container stack (WhisperLive + LocalAI + App).
@@ -242,14 +241,17 @@ flowchart TD
 
 The application supports two deployment modes to fit different business models:
 
-### 1. SaaS / Pro Tier ($20/mo)
+### 1. SaaS / Pro Tier (Cloud)
 - **Transcription**: Hosted WhisperLive (or local).
 - **Intelligence**: OpenRouter API (Llama 3.3 70B).
-- **Cost Control**: Uses "Gatekeeper" logic to only analyze text containing objection keywords (Price, Time, etc.) and enforces a cooldown.
+- **Cost Control**: Uses "Gatekeeper" logic to only analyze text containing objection keywords.
 - **Pros**: No high-end hardware required for the user.
 
-### 2. Enterprise / On-Prem Tier
+### 2. Local / Privacy Tier (Current Default)
 - **Transcription**: Local WhisperLive (GPU).
+- **Intelligence**: LocalAI (Phi-3.5-mini).
+- **Pros**: 100% Private, Free (no API costs), Offline capable.
+- **Requirements**: NVIDIA GPU (4GB+ VRAM recommended).
 - **Intelligence**: **LocalAI** running a quantized model (e.g., Mistral 7B) inside the Docker network.
 - **Privacy**: 100% local processing. No audio or text leaves the machine.
 - **Pros**: Unlimited analysis, zero latency, total privacy.
