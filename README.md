@@ -5,6 +5,7 @@ AI-powered system that listens to sales conversations, detects objections, and s
 **Status:** Phase 2 (Real-Time MVP) complete. [View Detailed Status & Roadmap](docs/mvp.md).
 
 ## Architecture
+
 ```mermaid
 graph TB
     subgraph Frontend
