@@ -86,10 +86,10 @@ The application follows a **Hub-and-Spoke** architecture where the FastAPI backe
 ```mermaid
 sequenceDiagram
     participant User
-    participant Browser (JS/AudioWorklet)
-    participant FastAPI (Orchestrator)
-    participant WhisperLive (Container)
-    participant LocalAI (Container)
+    participant Browser as "Browser (JS/AudioWorklet)"
+    participant FastAPI as "FastAPI (Orchestrator)"
+    participant WhisperLive as "WhisperLive (Container)"
+    participant LocalAI as "LocalAI (Container)"
 
     User->>Browser: Speaks
     Browser->>FastAPI: Stream Audio (WebSocket)

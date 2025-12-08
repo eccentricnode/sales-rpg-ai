@@ -9,7 +9,7 @@ AI-powered system that listens to sales conversations, detects objections, and s
 ```mermaid
 graph TB
     subgraph Frontend
-        Browser[Web Browser (AudioWorklet)]
+        Browser["Web Browser (AudioWorklet)"]
     end
 
     subgraph Backend
@@ -18,8 +18,8 @@ graph TB
     end
 
     subgraph Services
-        Whisper[WhisperLive (Docker)]
-        LocalAI[LocalAI (Phi-3.5-mini)]
+        Whisper["WhisperLive (Docker)"]
+        LocalAI["LocalAI (Phi-3.5-mini)"]
     end
 
     Browser -- Audio Stream (WS) --> FastAPI
