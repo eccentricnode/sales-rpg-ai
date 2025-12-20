@@ -7,6 +7,7 @@ from .analysis_orchestrator import (
     AnalysisResult,
     StreamingAnalyzer,
 )
+from .models import ConversationState
 
 __all__ = [
     "BufferConfig",
@@ -15,4 +16,5 @@ __all__ = [
     "AnalysisRequest",
     "AnalysisResult",
     "StreamingAnalyzer",
+    "ConversationState",
 ]

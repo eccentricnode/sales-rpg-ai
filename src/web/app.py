@@ -28,6 +28,7 @@ load_dotenv(project_root / ".env")
 
 from src.realtime.buffer_manager import DualBufferManager, BufferConfig
 from src.realtime.analysis_orchestrator import AnalysisOrchestrator, AnalysisResult, StreamingAnalyzer
+from src.realtime.models import ConversationState
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,67 +46,116 @@ WHISPER_HOST = os.getenv("WHISPER_HOST", "localhost")
 WHISPER_PORT = int(os.getenv("WHISPER_PORT", "9090"))
 
 # LLM Configuration
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openrouter")
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "local")
 LOCAL_AI_BASE_URL = os.getenv("LOCAL_AI_BASE_URL", "http://localhost:8080/v1")
 LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "phi-3.5-mini")
 
-if LLM_PROVIDER == "openrouter" and not OPENROUTER_API_KEY:
-    logger.warning("OPENROUTER_API_KEY not set! Analysis will fail.")
+# Global state for broadcasting
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+        self.transcript_history: list[dict] = []
 
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        # Send history to new connection
+        for segment in self.transcript_history:
+            await websocket.send_json(segment)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def reset(self):
+        self.transcript_history = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_json({"type": "reset"})
+            except Exception:
+                pass
+
+    async def broadcast(self, message: dict):
+        # Store if it's a transcript segment
+        if message.get("type") == "transcript":
+            self.transcript_history.append(message)
+            
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                pass
+
+manager = ConnectionManager()
 
 @app.get("/", response_class=HTMLResponse)
 async def get_home(request: Request):
     """Serve the main application page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/transcript", response_class=HTMLResponse)
+async def get_transcript(request: Request):
+    """Serve the transcript page."""
+    return templates.TemplateResponse("transcript.html", {"request": request})
 
 @app.websocket("/ws/audio")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
     """
     Handle WebSocket connection for audio streaming.
-    
-    Acts as a proxy:
-    Browser (Audio) -> FastAPI -> WhisperLive (Audio)
-    WhisperLive (Text) -> FastAPI -> Buffer -> Analysis
-    FastAPI (Text/Analysis) -> Browser
     """
+    if role == "monitor":
+        await manager.connect(websocket)
+        try:
+            while True:
+                await websocket.receive_text() # Keep connection alive
+        except WebSocketDisconnect:
+            manager.disconnect(websocket)
+        return
+
+    # Recorder Logic (Main Dashboard)
     await websocket.accept()
+    await manager.reset()
     
     loop = asyncio.get_running_loop()
     
     # Callback to send analysis results back to browser
     def on_analysis_result(result: AnalysisResult):
-        if result.has_objection or result.error:
-            data = {
-                "type": "objection" if result.has_objection else "error",
-                "text": result.active_text,
-                "response": result.raw_response,
-                "error": result.error,
-                "latency": result.latency_ms
-            }
-            # Schedule sending on the main event loop
-            asyncio.run_coroutine_threadsafe(websocket.send_json(data), loop)
+        # Send analysis result (which includes state)
+        data = {
+            "type": "analysis",
+            "script_location": result.state.script_location,
+            "key_points": result.state.key_points,
+            "suggestion": result.state.suggestion,
+            "latency": result.latency_ms,
+            "error": result.error
+        }
+        # Send to recorder
+        asyncio.run_coroutine_threadsafe(websocket.send_json(data), loop)
+        # Broadcast to monitors
+        asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
 
     # Callback for buffer manager to trigger analysis
     def on_analysis_ready(active_text: str, context_text: str):
         orchestrator.submit_analysis(active_text, context_text)
 
     # Initialize components
-    if LLM_PROVIDER == "local":
-        logger.info(f"Using LocalAI at {LOCAL_AI_BASE_URL} with model {LOCAL_AI_MODEL}")
-        analyzer = StreamingAnalyzer(
-            api_key="local", 
-            base_url=LOCAL_AI_BASE_URL,
-            model=LOCAL_AI_MODEL
-        )
-    else:
-        # Use a dummy key if not set to prevent crash on init, but it will fail on analyze
-        api_key = OPENROUTER_API_KEY or "dummy"
-        analyzer = StreamingAnalyzer(api_key=api_key)
+    logger.info(f"Using LocalAI at {LOCAL_AI_BASE_URL} with model {LOCAL_AI_MODEL}")
+    analyzer = StreamingAnalyzer(
+        api_key="local", 
+        base_url=LOCAL_AI_BASE_URL,
+        model=LOCAL_AI_MODEL
+    )
         
-    orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_analysis_result)
-    buffer_manager = DualBufferManager(on_analysis_ready=on_analysis_ready)
+    orchestrator = AnalysisOrchestrator(
+        analyzer=analyzer, 
+        on_result=on_analysis_result
+    )
+    
+    # Simplified buffer manager - no state analysis callback needed
+    buffer_manager = DualBufferManager(
+        on_analysis_ready=on_analysis_ready,
+        on_state_analysis_ready=lambda x, y: None # No-op for state analysis
+    )
     
     orchestrator.start()
     
@@ -122,7 +172,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "language": "en",
                 "task": "transcribe",
                 "model": "base",
-                "use_vad": False  # Disable VAD to ensure we get transcripts even if audio is quiet
+                "use_vad": False
             }
             await whisper_ws.send(json.dumps(config))
             
@@ -138,16 +188,17 @@ async def websocket_endpoint(websocket: WebSocket):
                                 text = segment.get("text", "")
                                 if text:
                                     # Send transcript to browser
-                                    await websocket.send_json({
+                                    msg_data = {
                                         "type": "transcript", 
                                         "text": text,
                                         "start": segment.get("start", 0),
                                         "end": segment.get("end", 0),
                                         "is_final": segment.get("is_last", False)
-                                    })
+                                    }
+                                    await websocket.send_json(msg_data)
+                                    await manager.broadcast(msg_data)
                                     
                                     # Feed to buffer manager
-                                    # We treat all incoming segments as potential updates
                                     buffer_manager.on_transcript_chunk(text, [segment])
                                     
                 except Exception as e:
@@ -164,7 +215,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         audio_data = message["bytes"]
                         await whisper_ws.send(audio_data)
                     elif "text" in message:
-                        # Handle control messages if needed
                         pass
                         
             except WebSocketDisconnect:

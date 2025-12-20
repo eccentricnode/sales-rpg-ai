@@ -1,8 +1,8 @@
-# Sales AI - Real-Time Sales Objection Detection
+# Sales AI - Real-Time Sales Script Guidance
 
-AI-powered system that listens to sales conversations, detects objections, and suggests responses in real-time.
+AI-powered system that listens to sales conversations, tracks script progress, and suggests responses in real-time.
 
-**Status:** Phase 2 (Real-Time MVP) complete. [View Detailed Status & Roadmap](docs/mvp.md).
+**Status:** Phase 4 (Minimal Script-Only Pivot) complete. [View Detailed Status & Roadmap](docs/mvp.md).
 
 ## Architecture
 
@@ -28,7 +28,7 @@ graph TB
     FastAPI -- Text --> Buffer
     Buffer -- Trigger Analysis --> LocalAI
     LocalAI -- JSON Response --> FastAPI
-    FastAPI -- Objection Event (WS) --> Browser
+    FastAPI -- Script Guidance (WS) --> Browser
 ```
 
 ## Quick Start (Docker)

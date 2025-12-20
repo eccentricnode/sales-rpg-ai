@@ -62,6 +62,7 @@ class DualBufferManager:
         self,
         config: Optional[BufferConfig] = None,
         on_analysis_ready: Optional[Callable[[str, str], None]] = None,
+        on_state_analysis_ready: Optional[Callable[[str], None]] = None,
     ):
         """
         Initialize the dual buffer manager.
@@ -71,21 +72,28 @@ class DualBufferManager:
                    Uses defaults if not provided.
             on_analysis_ready: Callback when analysis should be triggered.
                               Signature: (active_text: str, context_text: str) -> None
+            on_state_analysis_ready: Callback when state analysis should be triggered.
+                                    Signature: (full_transcript: str) -> None
         """
         self.config = config or BufferConfig()
         self.on_analysis_ready = on_analysis_ready
+        self.on_state_analysis_ready = on_state_analysis_ready
 
         # Active buffer: accumulates new segments
         self.active_buffer: list[Segment] = []
 
         # Context buffer: previous segments for context
         self.context_buffer: list[Segment] = []
+        
+        # Full history: all completed segments for state analysis
+        self.full_history: list[Segment] = []
 
         # Track the last incomplete segment (may change)
         self.last_incomplete_segment: Optional[Segment] = None
 
         # Timing
         self.last_analysis_time: float = time.time()
+        self.last_state_analysis_time: float = time.time()
         self.last_segment_end_time: float = 0.0
 
         # Track processed segment IDs to avoid duplicates
@@ -196,6 +204,9 @@ class DualBufferManager:
         Called after analysis is submitted. Maintains context window
         by trimming old segments based on config.
         """
+        # Add active buffer to full history
+        self.full_history.extend(self.active_buffer)
+
         # Move active buffer contents to context buffer
         self.context_buffer.extend(self.active_buffer)
 
@@ -204,6 +215,21 @@ class DualBufferManager:
 
         # Reset active buffer
         self.active_buffer = []
+        
+        # Check if we should trigger state analysis (Slow Loop)
+        self._check_state_trigger()
+
+    def _check_state_trigger(self) -> None:
+        """Check if it's time to run the Slow Loop state analysis."""
+        if not self.on_state_analysis_ready:
+            return
+            
+        # Trigger every 60 seconds
+        if time.time() - self.last_state_analysis_time > 60.0:
+            full_text = self._get_buffer_text(self.full_history)
+            if full_text.strip():
+                self.on_state_analysis_ready(full_text)
+                self.last_state_analysis_time = time.time()
 
         # Update timing
         self.last_analysis_time = time.time()

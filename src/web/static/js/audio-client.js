@@ -4,10 +4,16 @@ class AudioClient {
         this.mediaRecorder = null;
         this.isRecording = false;
         
+        // Controls
         this.startBtn = document.getElementById('startBtn');
         this.stopBtn = document.getElementById('stopBtn');
+        this.connectionStatus = document.getElementById('connectionStatus');
+        
+        // UI Panels
         this.transcriptDiv = document.getElementById('transcript');
-        this.objectionsDiv = document.getElementById('objections');
+        this.scriptLocationDiv = document.getElementById('scriptLocation');
+        this.keyPointsList = document.getElementById('keyPointsList');
+        this.suggestionBox = document.getElementById('suggestionBox');
 
         this.setupEventListeners();
     }
@@ -89,30 +95,56 @@ class AudioClient {
         
         this.socket.onopen = () => {
             console.log("WebSocket connected");
+            this.connectionStatus.textContent = "Connected";
+            this.connectionStatus.style.color = "var(--status-success)";
             this.transcriptDiv.innerHTML = '<p style="color: var(--status-success); font-style: italic;">Connected! Listening...</p>';
         };
         
         this.socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log("Received:", data);
+            console.log("Received WebSocket message:", data);
             
             if (data.type === 'transcript') {
                 this.handleTranscript(data);
-            } else if (data.type === 'objection') {
-                this.handleObjection(data);
+            } else if (data.type === 'analysis') {
+                console.log("Handling analysis data:", data);
+                this.handleAnalysis(data);
             } else if (data.type === 'error') {
-                this.handleError(data);
+                console.error("Server Error:", data.error);
             }
         };
         
         this.socket.onclose = () => {
             console.log("WebSocket disconnected");
+            this.connectionStatus.textContent = "Disconnected";
+            this.connectionStatus.style.color = "var(--text-muted)";
         };
+    }
+
+    handleAnalysis(data) {
+        // Update Script Location
+        if (data.script_location) {
+            this.scriptLocationDiv.textContent = data.script_location;
+        }
+
+        // Update Key Points
+        if (data.key_points && Array.isArray(data.key_points)) {
+            this.keyPointsList.innerHTML = data.key_points.map(point => `<li>${point}</li>`).join('');
+        }
+
+        // Update Suggestion
+        if (data.suggestion) {
+            this.suggestionBox.textContent = data.suggestion;
+            // Add a subtle flash effect to indicate update
+            this.suggestionBox.style.backgroundColor = "var(--bg-highlight)";
+            setTimeout(() => {
+                this.suggestionBox.style.backgroundColor = "";
+            }, 200);
+        }
     }
 
     handleTranscript(data) {
         // Use start time as a unique ID for the segment
-        // We round to 1 decimal place to avoid floating point issues
         const segmentId = `segment-${Math.round(data.start * 10)}`;
         let p = document.getElementById(segmentId);
 
@@ -126,44 +158,11 @@ class AudioClient {
         p.textContent = data.text;
 
         // If it looks like a complete sentence, darken it
-        // We don't rely solely on is_final because it can be flaky
         if (data.is_final || /[.!?]$/.test(data.text)) {
             p.style.color = 'var(--text-primary)';
         }
         
         this.transcriptDiv.scrollTop = this.transcriptDiv.scrollHeight;
-    }
-
-    handleObjection(data) {
-        const div = document.createElement('div');
-        div.className = 'suggestion-card objection-panel';
-        div.innerHTML = `
-            <div style="margin-bottom: 0.5rem;">
-                <span class="objection-badge objection-price">Objection Detected</span>
-            </div>
-            <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 0.5rem;">"${data.text}"</p>
-            <div style="border-top: 1px solid var(--bg-highlight); padding-top: 0.5rem; margin-top: 0.5rem;">
-                <p style="font-weight: 600; font-size: 0.875rem; color: var(--accent-primary); margin-bottom: 0.25rem;">Suggested Response:</p>
-                <p style="color: var(--text-primary);">${data.response}</p>
-            </div>
-        `;
-        this.objectionsDiv.prepend(div);
-    }
-
-    handleError(data) {
-        const div = document.createElement('div');
-        div.className = 'suggestion-card objection-panel';
-        div.style.borderColor = 'var(--status-price)';
-        div.innerHTML = `
-            <div style="margin-bottom: 0.5rem;">
-                <span class="objection-badge" style="background: rgba(191, 97, 106, 0.2); color: var(--status-price); border: 1px solid var(--status-price);">System Error</span>
-            </div>
-            <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">An error occurred during analysis:</p>
-            <div style="background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; color: var(--status-price);">
-                ${data.error || "Unknown error"}
-            </div>
-        `;
-        this.objectionsDiv.prepend(div);
     }
 
     updateUI(isRecording) {
