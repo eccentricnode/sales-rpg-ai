@@ -1,0 +1,55 @@
+{
+  "name": "Sales RPG AI",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {},
+  "postCreateCommand": "uv sync --all-extras && uv run ruff --version && uv run mypy --version && uv run pytest --version",
+  "forwardPorts": [8000, 8080, 9090],
+  "portsAttributes": {
+    "8000": { "label": "FastAPI Dev", "onAutoForward": "notify" },
+    "8080": { "label": "Sales AI Web", "onAutoForward": "notify" },
+    "9090": { "label": "Whisper Live", "onAutoForward": "ignore" }
+  },
+  "containerEnv": {
+    "PYTHONPATH": "${containerWorkspaceFolder}",
+    "UV_LINK_MODE": "copy"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        },
+        "ruff.path": [".venv/bin/ruff"],
+        "mypy-type-checker.path": [".venv/bin/mypy"],
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestPath": ".venv/bin/pytest",
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/.mypy_cache": true,
+          "**/.ruff_cache": true
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "ms-python.debugpy",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml"
+      ]
+    }
+  },
+  "workspaceFolder": "/workspaces/sales-rpg-ai",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/sales-rpg-ai,type=bind,consistency=cached"
+}
