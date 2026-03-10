@@ -21,6 +21,13 @@ class LLMConfig:
     model: str
     provider: str
 
+    def __repr__(self) -> str:
+        masked = self.api_key[:4] + "***" if len(self.api_key) > 4 else "***"
+        return (
+            f"LLMConfig(api_key='{masked}', base_url='{self.base_url}', "
+            f"model='{self.model}', provider='{self.provider}')"
+        )
+
 
 # Provider-specific env var defaults
 _DEFAULTS = {
@@ -100,8 +107,8 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
         key = os.getenv("AZURE_OPENAI_API_KEY", "")
         endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
         deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "")
-        if not key or not endpoint:
-            raise ValueError("AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT required")
+        if not key or not endpoint or not deployment:
+            raise ValueError("AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, and AZURE_OPENAI_DEPLOYMENT required")
         base_url = f"{endpoint.rstrip('/')}/openai/deployments/{deployment}"
         logger.info(f"Using Azure OpenAI ({deployment})")
         return LLMConfig(api_key=key, base_url=base_url, model=deployment, provider=provider)
