@@ -21,7 +21,7 @@
       "id": "S5-02",
       "title": "Fix mic cutoff bug with root-cause specification",
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "depends_on": [],
       "acceptance_criteria": [
         "Root cause identified and documented in specs/buffer_manager.md",
@@ -34,7 +34,7 @@
       "id": "S5-03",
       "title": "Add WebSocket error handling and reconnection spec",
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "depends_on": [],
       "acceptance_criteria": [
         "WebSocket connection drop detected within 5 seconds",
@@ -47,7 +47,7 @@
       "id": "S5-04",
       "title": "Implement context engine Layer 2 (Hardly Selling transcriptions)",
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "depends_on": ["S5-01"],
       "acceptance_criteria": [
         "Hardly Selling methodology loaded as retrievable context layer",
@@ -60,7 +60,7 @@
       "id": "S5-05",
       "title": "Optimize latency below 3 seconds for coaching suggestions",
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "depends_on": ["S5-01"],
       "acceptance_criteria": [
         "End-to-end latency from speech to coaching suggestion < 3 seconds",
@@ -73,7 +73,7 @@
       "id": "S5-06",
       "title": "Meeting notetaker integration via Vexa (self-hosted, open source)",
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "depends_on": ["S5-03"],
       "acceptance_criteria": [
         "Audio capture works from Zoom or Google Meet calls",
@@ -86,7 +86,7 @@
       "id": "S5-07",
       "title": "Security hardening and threat model",
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "depends_on": [],
       "acceptance_criteria": [
         "Threat model document covers audio data, LLM API keys, WebSocket",
@@ -100,7 +100,7 @@
       "id": "S5-08",
       "title": "Overlay UI for desktop (floating coaching widget)",
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "depends_on": ["S5-05", "S5-06"],
       "acceptance_criteria": [
         "Desktop overlay renders on top of Zoom/Meet window",
