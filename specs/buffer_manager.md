@@ -68,3 +68,40 @@ Special case: If active_buffer is empty but `last_incomplete_segment` exists and
 9. **`_processed_segment_keys` grows unbounded:** No trimming for long calls — set accumulates every key ever seen. Fix: prune keys older than `context_window_seconds` during `rotate_buffers()`.
 10. **Dedup key collision on missing timestamps:** `Segment.from_dict()` defaults `start=0, end=0` — two segments with missing timestamps share key `(0.0, 0.0)`, causing silent data loss.
 11. **No thread safety:** Buffer manager has no locks but may be called from different threads via callbacks. Not a current issue (single-threaded asyncio) but fragile.
+
+## Mic Cutoff Root Cause (S5-02)
+
+**Symptom:** Audio sometimes cuts off mid-sentence during real-time transcription. Users report that the tail end of utterances is silently dropped, producing incomplete transcripts.
+
+**Root cause:** The mic cutoff bug originates in `VadTranscriber.feed()` and its interaction with chunk boundaries. Browser `MediaRecorder` sends audio in arbitrarily-sized chunks (typically 100ms = 1600 samples at 16kHz). Silero VAD processes audio in fixed 512-sample windows. When a chunk is not aligned to 512 samples, the remainder is carried over to the next `feed()` call via `_remainder`. Three specific failure modes cause audio continuity loss:
+
+### 1. `flush()` discards remainder when not in speaking state
+
+`VadTranscriber.flush()` (line 236) only processes `_remainder` if `_is_speaking` is True:
+
+```python
+if len(self._remainder) > 0 and self._is_speaking:
+    self._speech_buffer = np.concatenate([self._speech_buffer, self._remainder])
+```
+
+If the final chunk ends with partial audio that hasn't yet triggered a VAD speech detection (because fewer than 512 samples remain), those samples are silently discarded. This clips the onset of speech that spans the final chunk boundary.
+
+**Fix:** In `flush()`, process the remainder through VAD regardless of speaking state. Pad with zeros to reach `VAD_CHUNK_SIZE` if needed, so the VAD can make a final speech/silence decision on the trailing samples.
+
+### 2. `_speech_start_sample` set after remainder prepending skews timestamps
+
+When `_process_vad_window()` detects speech onset, it sets `_speech_start_sample = self._total_samples_fed`. However, `_total_samples_fed` is only incremented at the end of `feed()` (line 141) using the raw input chunk length, not accounting for remainder samples being re-processed. This means the speech start timestamp is relative to the global sample counter before the current chunk, which is correct for the timeline. But if `_finalize_utterance()` is called during the same `feed()` call, the `_total_samples_fed` has not yet been updated, so the end timestamp may slightly undercount. This is a minor precision issue but does not cause dropped audio.
+
+### 3. `_finalize_utterance()` resets state mid-chunk at chunk boundary
+
+When `_finalize_utterance()` fires during `feed()` processing (due to max utterance length or silence threshold), it resets `_is_speaking`, `_speech_buffer`, and `_silence_samples`. Subsequent VAD windows in the same `feed()` call then start fresh. If the audio at that point is mid-word (e.g., a brief dip in VAD probability causes a false silence detection near a chunk boundary), the utterance is split and the beginning of the next word may be below the minimum utterance threshold (160ms), causing it to be discarded as noise. This produces the characteristic "last word cut off" symptom.
+
+**Fix:** Add a look-ahead of 1-2 VAD windows before committing to finalization. Alternatively, lower the silence threshold near chunk boundaries, or carry a small pre-roll buffer into the next utterance.
+
+### Audio continuity invariant
+
+The partial audio continuity contract is: every sample fed via `feed()` must either be (a) processed through a complete VAD window, (b) stored in `_remainder` for the next call, or (c) included in a finalized utterance's `_speech_buffer`. No sample may be silently dropped. The `flush()` bug violates (a) by discarding remainder samples that never reach a full VAD window.
+
+### Chunk boundary alignment
+
+The fundamental architectural tension is that browser `MediaRecorder` produces chunks at its own cadence (typically 100-250ms), while Silero VAD requires exactly 512-sample windows (32ms). The remainder buffer bridges this mismatch, but the current implementation does not guarantee audio continuity across all edge cases at chunk boundaries. Specifically, the remainder buffer is correctly prepended in `feed()` (line 126-128), but `flush()` and `_finalize_utterance()` do not fully account for partial audio left in the remainder.
