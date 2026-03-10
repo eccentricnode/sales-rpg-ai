@@ -35,9 +35,10 @@ class AnalysisResult:
     error: Optional[str] = None
 
 class StreamingAnalyzer:
-    def __init__(self, api_key: str, base_url: str, model: str):
+    def __init__(self, api_key: str, base_url: str, model: str, fallback_model: Optional[str] = None):
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.model = model
+        self.fallback_model = fallback_model
         self.retriever = None
 
         if USE_RAG:
@@ -97,6 +98,7 @@ class StreamingAnalyzer:
         logger.info("RAG: Pipeline ready")
 
     def analyze(self, active_text: str, context_text: str = "") -> str:
+        """Analyze text using streaming LLM responses for lower latency."""
         # Build user message with context if available
         if context_text:
             user_message = f"<conversation_so_far>\n{context_text}\n</conversation_so_far>\n\n<latest>\n{active_text}\n</latest>"
@@ -119,9 +121,16 @@ class StreamingAnalyzer:
             max_tokens=500,
             temperature=0.1,
             timeout=30,
-            stop=["<|end|>", "<|end_of_text|>", "<|im_end|>", "\n\n"]
+            stop=["<|end|>", "<|end_of_text|>", "<|im_end|>", "\n\n"],
+            stream=True
         )
-        content = response.choices[0].message.content or ""
+
+        # Collect streaming chunks into full response
+        chunks = []
+        for chunk in response:
+            if chunk.choices and chunk.choices[0].delta.content:
+                chunks.append(chunk.choices[0].delta.content)
+        content = "".join(chunks)
 
         # Clean markdown
         if "```json" in content:
@@ -130,6 +139,45 @@ class StreamingAnalyzer:
             content = content.split("```")[0]
 
         return content.strip()
+
+    def _try_with_fallback(self, text: str, timeout: float = 5.0) -> str:
+        """Try primary model, fall back to fallback_model if timeout exceeded.
+
+        Args:
+            text: The text to analyze.
+            timeout: Maximum seconds to wait for primary model (default 5.0).
+
+        Returns:
+            Analysis result from primary or fallback model.
+        """
+        result = [None]
+        error = [None]
+
+        def _run_primary():
+            try:
+                result[0] = self.analyze(text)
+            except Exception as e:
+                error[0] = e
+
+        thread = threading.Thread(target=_run_primary)
+        thread.start()
+        thread.join(timeout=timeout)
+
+        if thread.is_alive() or error[0] is not None:
+            # Primary timed out or errored — try fallback
+            if self.fallback_model:
+                original_model = self.model
+                self.model = self.fallback_model
+                try:
+                    return self.analyze(text)
+                finally:
+                    self.model = original_model
+            else:
+                if error[0]:
+                    raise error[0]
+                raise TimeoutError(f"Primary model timed out after {timeout}s and no fallback configured")
+
+        return result[0]
 
     def recommend(self, summary: str, key_points: list[str], stage: str, context_text: str = "") -> str:
         """
