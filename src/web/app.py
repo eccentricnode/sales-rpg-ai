@@ -100,6 +100,27 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
         self.transcript_history: list[dict] = []
+        self.connection_timeout: float = 5.0
+        self.ping_interval: float = 2.0
+
+    def get_session_state(self) -> dict:
+        """Return session state for reconnection payload."""
+        return {
+            "transcript_history": list(self.transcript_history),
+            "active_connections": len(self.active_connections),
+        }
+
+    async def cleanup_stale_connections(self):
+        """Remove half-open connections by attempting a ping."""
+        stale = []
+        for conn in self.active_connections:
+            try:
+                await conn.send_json({"type": "ping"})
+            except Exception:
+                stale.append(conn)
+        for conn in stale:
+            if conn in self.active_connections:
+                self.active_connections.remove(conn)
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
