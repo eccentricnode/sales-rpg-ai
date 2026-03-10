@@ -59,6 +59,33 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 WHISPER_HOST = os.getenv("WHISPER_HOST", "localhost")
 WHISPER_PORT = int(os.getenv("WHISPER_PORT", "9090"))
 
+# WebSocket origin validation
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:8000,http://localhost:8080,http://127.0.0.1:8000,http://127.0.0.1:8080"
+).split(",")
+
+
+def validate_origin(websocket: WebSocket) -> bool:
+    """Validate the Origin header on WebSocket upgrade requests.
+
+    Returns True if the origin is allowed or if no origin is present
+    (e.g., same-origin requests from some browsers).
+    """
+    origin = None
+    for header_name, header_value in websocket.scope.get("headers", []):
+        if header_name == b"origin":
+            origin = header_value.decode("utf-8")
+            break
+
+    # No origin header — same-origin or non-browser client
+    if origin is None:
+        return True
+
+    # Check against allowed origins (strip whitespace for env var parsing)
+    allowed = [o.strip() for o in ALLOWED_ORIGINS]
+    return origin in allowed
+
 # VadTranscriber configuration
 VAD_WHISPER_MODEL = os.getenv("VAD_WHISPER_MODEL", "base")
 VAD_DEVICE = os.getenv("VAD_DEVICE", "cuda")
@@ -136,6 +163,12 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
     """
     Handle WebSocket connection for audio streaming.
     """
+    # Validate origin header before accepting the connection
+    if not validate_origin(websocket):
+        logger.warning(f"Rejected WebSocket connection from disallowed origin")
+        await websocket.close(code=1008, reason="Origin not allowed")
+        return
+
     if role == "monitor":
         await manager.connect(websocket)
         try:
@@ -495,6 +528,12 @@ async def dual_audio_endpoint(websocket: WebSocket):
     separately with WhisperLive, and returns merged transcript with speaker labels.
     Requires PyAudio (not available in Docker containers).
     """
+    # Validate origin header before accepting the connection
+    if not validate_origin(websocket):
+        logger.warning(f"Rejected dual-audio WebSocket from disallowed origin")
+        await websocket.close(code=1008, reason="Origin not allowed")
+        return
+
     if not DUAL_CAPTURE_AVAILABLE:
         await websocket.accept()
         await websocket.send_json({
