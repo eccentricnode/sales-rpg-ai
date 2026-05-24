@@ -10,7 +10,13 @@ from typing import Callable, Optional
 from openai import OpenAI
 
 from .models import ConversationState
-from .prompts import get_rag_guidance_prompt, get_recommendation_prompt, get_script_guidance_prompt, load_script
+from .prompts import (
+    build_untrusted_transcript_message,
+    get_rag_guidance_prompt,
+    get_recommendation_prompt,
+    get_script_guidance_prompt,
+    load_script,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -172,13 +178,7 @@ class StreamingAnalyzer:
         timeout: float = 30,
     ) -> str:
         """Analyze text using streaming LLM responses for lower latency."""
-        # Build user message with context if available
-        if context_text:
-            user_message = (
-                f"<conversation_so_far>\n{context_text}\n</conversation_so_far>\n\n<latest>\n{active_text}\n</latest>"
-            )
-        else:
-            user_message = active_text
+        user_message = build_untrusted_transcript_message(active_text, context_text)
 
         # Build system prompt — RAG retrieves relevant sections per-request
         if self.retriever:

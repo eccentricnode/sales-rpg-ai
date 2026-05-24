@@ -3,7 +3,7 @@
 - **Ground truth from this planning pass**
   - Branch is `phase5/ralph-loop`; `IMPLEMENTATION_PLAN.md` was absent before this pass.
   - `src/lib` does not exist. Treat `src/realtime`, `src/rag`, `src/integrations`, and `src/web` as the shared implementation layer for Phase 5 work.
-  - `prd.json` has been made honest for this iteration: S5-01, S5-02, S5-03, and S5-04 are `passes: true` with current test evidence, S5-05/S5-07 are `passes: false`, and S5-06/S5-08 are `passes: "deferred"` pending live Vexa/desktop probes.
+  - `prd.json` has been made honest for this iteration: S5-01, S5-02, S5-03, S5-04, and S5-07 are `passes: true` with current test evidence, S5-05 is `passes: false`, and S5-06/S5-08 are `passes: "deferred"` pending live Vexa/desktop probes.
   - Prior S5-02 sine-fixture finding is resolved: the failure came from using real Silero + Whisper on a pure sine fixture, which violates `specs/05-vad_transcriber.md`; the acceptance probe now mocks VAD/Whisper and verifies chunk continuity.
   - Local probe: `uv run pytest -q tests/test_s5_acceptance.py::TestS5_02_MicCutoff -vv` => **3 passed**.
   - Local probe: `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **67 passed**.
@@ -15,7 +15,7 @@
   - S5-06 evidence: `uv run pytest -q tests/test_vexa_client.py tests/test_vexa_web.py tests/test_s5_acceptance.py::TestS5_06_MeetingNotetaker tests/test_dual_capture.py` => **10 passed, 1 skipped, 1 warning**.
   - Local probe: no Vexa container/service is reachable at `127.0.0.1:8080`.
   - Prior Explorer C note about `/ws/dual-audio` not feeding `DualBufferManager` is stale: current `/ws/dual-audio` segment callbacks feed their existing `DualBufferManager`.
-  - Explorer C finding: prompt output keys drift from runtime readers; prompts emit `phase`/`archetype`, while `AnalysisOrchestrator` reads `script_location`.
+  - Prior Explorer C prompt-schema drift is resolved: guidance prompts now request `script_location`, matching `AnalysisOrchestrator`.
   - Explorer C collection blockers are resolved: hardware E2E is skipped cleanly, import-time side effects were removed, and stale imports were fixed.
   - Final iteration evidence: `uv run pytest -q` => **89 passed, 4 skipped**.
   - Final iteration evidence: `uv run pytest --collect-only -q` => **92 tests collected**.
@@ -24,7 +24,7 @@
   - Repo-wide future work remains: `uv run ruff format --check src/ tests/` wants **40 files** reformatted.
   - Repo-wide future work remains: `uv run mypy src/ --ignore-missing-imports` reports **82 existing errors in 15 files**.
   - S5-03 WebSocket reconnection increment completed this iteration: FastAPI lifespan now runs startup security/connection lifecycle work; background stale-connection cleanup calls `ConnectionManager.cleanup_stale_connections()` on `manager.ping_interval`; monitor connections receive a `session_state` payload plus transcript and coaching replay; `ConnectionManager` stores bounded transcript/coaching history; recorder resume is explicitly unsupported via `recorder_resume.supported=false` because live audio streams cannot safely resume from in-memory state; dashboard monitor WebSocket retries on close.
-  - S5-07 startup integrity subtask resolved this iteration: FastAPI lifespan invokes `verify_knowledge_base()` before runtime content is served; failed integrity raises `RuntimeError`; health only exposes the `valid`/`files_checked` integrity summary. S5-07 remains `passes: false` until the whole story is fully proven.
+  - S5-07 resolved this iteration: FastAPI lifespan invokes `verify_knowledge_base()` before runtime content is served; failed integrity raises `RuntimeError`; health only exposes the `valid`/`files_checked` integrity summary; runtime transcript prompt hardening now wraps untrusted transcript/audio-derived input as data so it cannot override system/developer instructions.
   - Current-iteration S5 evidence:
     - `uv run pytest -q tests/test_behavioral.py::TestContextEngineLayer2Behavior tests/test_s5_acceptance.py::TestS5_04_ContextEngine -vv` => **7 passed**.
     - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **76 passed**.
@@ -40,6 +40,13 @@
   - S5-05 evidence: `uv run pytest -q` => **110 passed, 4 skipped, 1 warning**.
   - S5-05 touched-file quality gates passed for `src/realtime/analysis_orchestrator.py`, `src/realtime/llm_provider.py`, `src/web/app.py`, `tests/test_behavioral.py`, and `tests/test_latency_benchmark.py`: ruff check and ruff format passed on that file set.
   - Added missing behavioral specs: `specs/05-vad_transcriber.md`, `specs/06-websocket_reconnection.md`, `specs/07-context_engine_layer2.md`, `specs/08-latency_optimization.md`, `specs/09-vexa_integration.md`, `specs/10-security_hardening.md`, `specs/11-overlay_widget.md`.
+  - S5-07 runtime prompt-injection mitigation is implemented: `src/realtime/prompts.py` provides a reusable sanitizer/data wrapper; `StreamingAnalyzer` submits transcript/context through that wrapper; summary prompts wrap transcript JSON too.
+  - S5-07 prompt-schema drift is resolved: guidance prompts request `script_location`, matching `AnalysisOrchestrator`.
+  - S5-07 evidence: `uv run pytest -q tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestRAGIntegrityBehavior tests/test_behavioral.py::TestStartupIntegrityBehavior tests/test_behavioral.py::TestOriginValidation tests/test_s5_acceptance.py::TestS5_07_Security -vv` => **25 passed**.
+  - S5-07 evidence: `uv run pytest -q tests/test_behavioral.py tests/test_s5_acceptance.py::TestS5_07_Security` => **64 passed**.
+  - S5-07 final iteration evidence after changes and `prd.json` correction: `uv run pytest -q` => **113 passed, 4 skipped, 1 warning in 17.79s**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+  - S5-07 evidence: tampered/empty KB probe via `uv run python ... verify_knowledge_base(...)` returned `valid: false` for checksum mismatch and empty file.
+  - S5-07 touched-file quality gates passed: `uv run ruff check src/realtime/prompts.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py && uv run ruff format --check src/realtime/prompts.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py` => **All checks passed / 3 files already formatted**.
 
 - **P0: Make `prd.json` honest before any merge**
   - Current status: completed for this iteration.
@@ -105,11 +112,16 @@
     - Capture a live browser WebSocket probe proving `analysis_delta` reaches the UI and renders streamed live coaching partials before final analysis completion.
 
 - **P5: Enforce S5-07 security startup behavior**
-  - Current status: startup integrity subtask resolved this iteration; S5-07 remains incomplete until all security hardening criteria are proven.
+  - Current status: completed this iteration; `prd.json` marks S5-07 `passes: true`.
+  - Why this matters now: transcript/audio-derived input is untrusted runtime data and must not be able to override system/developer instructions through prompt injection.
   - Completed implementation: FastAPI lifespan invokes `verify_knowledge_base()` before runtime content is served, failed integrity raises `RuntimeError`, and health only exposes the `valid`/`files_checked` integrity summary.
-  - Required probes:
-    - Tampered or empty knowledge-base probe fails according to documented policy.
-    - `pytest -q tests/test_behavioral.py tests/test_s5_acceptance.py::TestS5_07_Security`.
+  - Completed implementation: runtime transcript prompt hardening now uses a reusable sanitizer/data wrapper in `src/realtime/prompts.py`; `StreamingAnalyzer` submits transcript/context through that wrapper; summary prompts wrap transcript JSON too.
+  - Resolved schema drift: guidance prompts request `script_location`, matching `AnalysisOrchestrator`.
+  - Evidence:
+    - `uv run pytest -q tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestRAGIntegrityBehavior tests/test_behavioral.py::TestStartupIntegrityBehavior tests/test_behavioral.py::TestOriginValidation tests/test_s5_acceptance.py::TestS5_07_Security -vv` => **25 passed**.
+    - `uv run pytest -q tests/test_behavioral.py tests/test_s5_acceptance.py::TestS5_07_Security` => **64 passed**.
+    - Tampered/empty KB probe via `uv run python ... verify_knowledge_base(...)` returned `valid: false` for checksum mismatch and empty file.
+    - `uv run ruff check src/realtime/prompts.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py && uv run ruff format --check src/realtime/prompts.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py` => **All checks passed / 3 files already formatted**.
 
 - **P6: Live-prove or defer S5-08 overlay**
   - Current status: structural code exists; desktop behavior is unverified here.
