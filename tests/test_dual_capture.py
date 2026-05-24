@@ -13,10 +13,16 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.audio import MicrophoneCapture, SystemAudioCapture, DualCaptureManager
+try:
+    from src.audio import DualCaptureManager, MicrophoneCapture, SystemAudioCapture
+except ImportError as exc:
+    pytest.skip(f"Dual capture hardware dependencies are unavailable: {exc}", allow_module_level=True)
+
 from src.transcription import DualStreamTranscriber
 
 
@@ -195,6 +201,7 @@ class DualCaptureTests:
         except Exception as e:
             print(f"\n❌ FAIL: {e}")
             import traceback
+
             traceback.print_exc()
             return False, None, None
 
@@ -240,7 +247,7 @@ class DualCaptureTests:
             sales_rep_count = sum(1 for s in transcript.segments if s.speaker == "SALES_REP")
             customer_count = sum(1 for s in transcript.segments if s.speaker == "CUSTOMER")
 
-            print(f"\nSpeaker breakdown:")
+            print("\nSpeaker breakdown:")
             print(f"  SALES_REP: {sales_rep_count} segments")
             print(f"  CUSTOMER: {customer_count} segments")
 
@@ -262,6 +269,7 @@ class DualCaptureTests:
         except Exception as e:
             print(f"\n❌ FAIL: {e}")
             import traceback
+
             traceback.print_exc()
             return False
 

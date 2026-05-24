@@ -9,9 +9,7 @@ stabilizes, it will be imported from the sales-rpg-ai package.
 """
 
 import logging
-import queue
 import threading
-from pathlib import Path
 
 import numpy as np
 
@@ -57,9 +55,7 @@ class VadTranscriber:
         self.condition_on_previous_text = condition_on_previous_text
 
         # Silence threshold in samples
-        self._silence_threshold_samples = int(
-            (silence_threshold_ms / 1000.0) * self.SAMPLE_RATE
-        )
+        self._silence_threshold_samples = int((silence_threshold_ms / 1000.0) * self.SAMPLE_RATE)
         self._max_utterance_samples = int(max_utterance_seconds * self.SAMPLE_RATE)
 
         # VAD state
@@ -69,6 +65,8 @@ class VadTranscriber:
         self._silence_samples = 0
         self._speech_start_sample = 0  # Global sample position of speech start
         self._total_samples_fed = 0  # Total samples processed so far
+        self._remainder_start_sample = 0  # Global sample position of _remainder[0]
+        self._current_window_start_sample = 0  # Global sample position of current VAD window
 
         # Transcription output queue
         self._output_segments: list[dict] = []
@@ -122,8 +120,11 @@ class VadTranscriber:
         int16_audio = np.frombuffer(chunk_bytes, dtype=np.int16)
         float_audio = int16_audio.astype(np.float32) / 32768.0
 
-        # Prepend remainder from previous chunk
+        # Prepend remainder from previous chunk. The combined buffer begins at
+        # the saved remainder's original timeline position.
+        combined_start_sample = self._total_samples_fed
         if len(self._remainder) > 0:
+            combined_start_sample = self._remainder_start_sample
             float_audio = np.concatenate([self._remainder, float_audio])
             self._remainder = np.array([], dtype=np.float32)
 
@@ -131,12 +132,16 @@ class VadTranscriber:
         i = 0
         while i + self.VAD_CHUNK_SIZE <= len(float_audio):
             window = float_audio[i : i + self.VAD_CHUNK_SIZE]
+            self._current_window_start_sample = combined_start_sample + i
             self._process_vad_window(window)
             i += self.VAD_CHUNK_SIZE
 
         # Save leftover samples for next call
         if i < len(float_audio):
             self._remainder = float_audio[i:]
+            self._remainder_start_sample = combined_start_sample + i
+        else:
+            self._remainder_start_sample = self._total_samples_fed + len(int16_audio)
 
         self._total_samples_fed += len(int16_audio)
 
@@ -153,7 +158,7 @@ class VadTranscriber:
             # Speech detected
             if not self._is_speaking:
                 self._is_speaking = True
-                self._speech_start_sample = self._total_samples_fed
+                self._speech_start_sample = self._current_window_start_sample
                 self._speech_buffer = np.array([], dtype=np.float32)
                 self._silence_samples = 0
 
@@ -199,12 +204,14 @@ class VadTranscriber:
         text = self._transcribe_audio(speech_only)
 
         if text.strip():
-            self._output_segments.append({
-                "text": text.strip(),
-                "start": round(start_seconds, 3),
-                "end": round(end_seconds, 3),
-                "completed": True,
-            })
+            self._output_segments.append(
+                {
+                    "text": text.strip(),
+                    "start": round(start_seconds, 3),
+                    "end": round(end_seconds, 3),
+                    "completed": True,
+                }
+            )
 
         # Reset state
         self._is_speaking = False
@@ -243,8 +250,10 @@ class VadTranscriber:
             # Pad remainder to VAD_CHUNK_SIZE with zeros so VAD can process it
             padded = np.zeros(self.VAD_CHUNK_SIZE, dtype=np.float32)
             padded[: len(self._remainder)] = self._remainder
+            self._current_window_start_sample = self._remainder_start_sample
             self._process_vad_window(padded)
             self._remainder = np.array([], dtype=np.float32)
+            self._remainder_start_sample = self._total_samples_fed
 
         # If still speaking after processing remainder, append any leftover
         # remainder to speech buffer and finalize

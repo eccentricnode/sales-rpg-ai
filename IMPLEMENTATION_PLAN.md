@@ -3,30 +3,39 @@
 - **Ground truth from this planning pass**
   - Branch is `phase5/ralph-loop`; `IMPLEMENTATION_PLAN.md` was absent before this pass.
   - `src/lib` does not exist. Treat `src/realtime`, `src/rag`, `src/integrations`, and `src/web` as the shared implementation layer for Phase 5 work.
-  - Existing `prd.json` marks S5-01..S5-08 as `passes: true`, but that is not honest until each story has current tool-verified evidence or a documented `[DEFERRED-VERIFY]` state.
-  - Local probe: `pytest -q tests/test_s5_acceptance.py` => **1 failed, 22 passed**. Failure is S5-02 `test_partial_chunks_no_dropped_segments`: synthetic 500ms speech split into 100ms chunks produced zero segments.
+  - `prd.json` has been made honest for this iteration: S5-01 and S5-02 remain `passes: true` with current test evidence, S5-03/S5-04/S5-05/S5-07 are `passes: false`, and S5-06/S5-08 are `passes: "deferred"` pending live Vexa/desktop probes.
+  - Prior S5-02 sine-fixture finding is resolved: the failure came from using real Silero + Whisper on a pure sine fixture, which violates `specs/05-vad_transcriber.md`; the acceptance probe now mocks VAD/Whisper and verifies chunk continuity.
+  - Local probe: `uv run pytest -q tests/test_s5_acceptance.py::TestS5_02_MicCutoff -vv` => **3 passed**.
+  - Local probe: `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **67 passed**.
   - Local probe: `pytest -q tests/test_behavioral.py` => **44 passed**.
   - Local probe: `pytest -q tests/test_latency_benchmark.py` => **3 passed**.
   - Local probe: Vexa bridge translation into `DualBufferManager` works for a synthetic `TranscriptEvent`, but this is not evidence of Zoom/Meet capture.
   - Local probe: `websockets.__version__` is `10.4`; `VexaClient.connect()` fails with `BaseEventLoop.create_connection() got an unexpected keyword argument 'additional_headers'`.
   - Local probe: no Vexa container/service is reachable at `127.0.0.1:8080`.
+  - Explorer C finding: main `/ws/audio` and `/ws/dual-audio` paths do not appear to feed transcript segments into `DualBufferManager`/`AnalysisOrchestrator`.
+  - Explorer C finding: prompt output keys drift from runtime readers; prompts emit `phase`/`archetype`, while `AnalysisOrchestrator` reads `script_location`.
+  - Explorer C collection blockers are resolved: hardware E2E is skipped cleanly, import-time side effects were removed, and stale imports were fixed.
+  - Final iteration evidence: `uv run pytest -q` => **89 passed, 4 skipped**.
+  - Final iteration evidence: `uv run pytest --collect-only -q` => **92 tests collected**.
+  - Final touched-file quality gates passed for `src/realtime/vad_transcriber.py`, `tests/test_s5_acceptance.py`, `tests/test_dual_capture.py`, `tests/test_objection_detection.py`, `src/validation/script_tester.py`, `tests/test_script_tester.py`, and `tests/test_e2e_pipeline.py`: ruff check and ruff format passed on that file set.
+  - Repo-wide future work remains: `uv run ruff check src/ tests/` still fails with many pre-existing import/format issues across the repo.
+  - Repo-wide future work remains: `uv run ruff format --check src/ tests/` wants **40 files** reformatted.
+  - Repo-wide future work remains: `uv run mypy src/ --ignore-missing-imports` reports **82 existing errors in 15 files**.
   - Local search: `verify_knowledge_base()` exists but is not called from app startup.
   - Added missing behavioral specs: `specs/05-vad_transcriber.md`, `specs/06-websocket_reconnection.md`, `specs/07-context_engine_layer2.md`, `specs/08-latency_optimization.md`, `specs/09-vexa_integration.md`, `specs/10-security_hardening.md`, `specs/11-overlay_widget.md`.
 
 - **P0: Make `prd.json` honest before any merge**
-  - Change any Phase 5 story without current probe evidence away from `passes: true`.
-  - At minimum, set S5-02 to false because an acceptance probe fails.
-  - Mark S5-06 and S5-08 `[DEFERRED-VERIFY]` unless a real Vexa/desktop meeting probe is completed from this machine.
+  - Current status: completed for this iteration.
+  - Stories without current full probe evidence were moved away from optimistic `passes: true`.
+  - S5-06 and S5-08 are marked `passes: "deferred"` until real Vexa/desktop meeting probes are completed from this machine.
   - Do not merge `phase5/ralph-loop` into `main` while optimistic `passes: true` remains unsupported.
 
 - **P1: Fix or reclassify S5-02 mic cutoff**
-  - Current status: failing.
-  - First determine whether the failure is true chunk-boundary sample loss or Silero rejecting the sine-wave fixture.
-  - Required probes:
-    - `pytest -q tests/test_s5_acceptance.py::TestS5_02_MicCutoff::test_partial_chunks_no_dropped_segments -vv`
-    - Add/use a mocked VAD + mocked Whisper continuity probe proving split speech across non-aligned chunks emits a completed segment.
-    - Re-run `pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py`.
-  - Completion evidence must reference `specs/05-vad_transcriber.md` and `specs/buffer_manager.md`.
+  - Current status: fixed this iteration.
+  - Resolution: tightened `VadTranscriber` window/sample accounting and changed the S5-02 acceptance probe to mock VAD/Whisper per `specs/05-vad_transcriber.md`, so continuity is tested without relying on synthetic sine-wave recognition.
+  - Completion evidence:
+    - `uv run pytest -q tests/test_s5_acceptance.py::TestS5_02_MicCutoff -vv` => **3 passed**.
+    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **67 passed**.
 
 - **P2: Bring S5-06 Vexa integration to honest state**
   - Current status: partial code/docs only, not live verified.
@@ -99,6 +108,8 @@
 
 - **Merge gate**
   - Every S5 story must be either honestly probe-passing or marked `[DEFERRED-VERIFY]` with the exact pre-flight steps above.
-  - Run the selected Phase 5 test/probe set and record command output in the final verification log.
+  - Final iteration core tests are green: `uv run pytest -q` => **89 passed, 4 skipped, 1 warning**; `uv run pytest --collect-only -q` => **92 tests collected**.
+  - Touched-file ruff gates are green for `src/realtime/vad_transcriber.py`, `tests/test_s5_acceptance.py`, `tests/test_dual_capture.py`, `tests/test_objection_detection.py`, `src/validation/script_tester.py`, `tests/test_script_tester.py`, and `tests/test_e2e_pipeline.py`.
+  - Do not block this iteration on repo-wide lint/type gates without separately scoping the cleanup: `uv run ruff check src/ tests/`, `uv run ruff format --check src/ tests/`, and `uv run mypy src/ --ignore-missing-imports` remain failing from pre-existing repo-wide issues.
   - Ensure the working tree is clean except intentional evidence/spec/plan/PRD updates.
   - Only then rebase/merge `phase5/ralph-loop` into `main`.

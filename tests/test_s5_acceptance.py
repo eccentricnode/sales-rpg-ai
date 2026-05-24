@@ -7,10 +7,8 @@ Ralph builds against these tests to make them PASS.
 Story acceptance criteria from prd.json.
 """
 
-import json
-import os
+import inspect
 import threading
-import time
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -45,22 +43,53 @@ class TestS5_02_MicCutoff(unittest.TestCase):
         num_samples = int(sample_rate * duration_ms / 1000)
         return np.zeros(num_samples, dtype=np.int16).tobytes()
 
+    def _make_vad_with_mocked_models(self, **kwargs):
+        """Create a VadTranscriber that tests stream continuity, not model quality."""
+        from src.realtime.vad_transcriber import VadTranscriber
+
+        class FakeVadProbability:
+            def __init__(self, value: float):
+                self.value = value
+
+            def item(self):
+                return self.value
+
+        class AmplitudeVad:
+            def __call__(self, tensor, _sample_rate):
+                audio = tensor.detach().cpu().numpy()
+                return FakeVadProbability(0.95 if np.max(np.abs(audio)) > 0.01 else 0.0)
+
+            def reset_states(self):
+                pass
+
+        def fake_load_vad(transcriber):
+            transcriber._vad_model = AmplitudeVad()
+
+        def fake_load_whisper(transcriber):
+            transcriber._whisper = MagicMock()
+            transcriber._whisper_lock = threading.Lock()
+
+        def fake_transcribe_audio(audio):
+            return "hello from split chunks" if np.max(np.abs(audio)) > 0.01 else ""
+
+        with (
+            patch.object(VadTranscriber, "_load_vad", fake_load_vad),
+            patch.object(VadTranscriber, "_load_whisper", fake_load_whisper),
+        ):
+            vad = VadTranscriber(model="base", device="cpu", **kwargs)
+            vad._transcribe_audio = fake_transcribe_audio
+            return vad
+
     def test_partial_chunks_no_dropped_segments(self):
         """Audio split across chunk boundaries must not drop segments.
 
         Simulates a sentence split across two small chunks (like browser
         MediaRecorder producing 100ms chunks). The VadTranscriber remainder
-        buffer must carry partial VAD windows across feed() calls.
+        buffer must carry partial VAD windows across feed() calls. VAD and
+        Whisper are mocked so this test only measures audio continuity; a pure
+        sine fixture is not a valid probe of real Silero/Whisper acceptance.
         """
-        try:
-            from src.realtime.vad_transcriber import VadTranscriber
-        except ImportError:
-            self.skipTest("VadTranscriber dependencies not available (torch/whisper)")
-
-        try:
-            vad = VadTranscriber(model="base", device="cpu", silence_threshold_ms=300)
-        except Exception:
-            self.skipTest("Cannot initialize VadTranscriber (model download required)")
+        vad = self._make_vad_with_mocked_models(silence_threshold_ms=300)
 
         # Feed speech in small chunks (simulating browser 100ms chunks)
         # Then silence to finalize
@@ -69,14 +98,14 @@ class TestS5_02_MicCutoff(unittest.TestCase):
         chunk_size = 3200  # 100ms at 16kHz, 2 bytes per sample = 3200 bytes
 
         for i in range(0, len(speech), chunk_size):
-            chunk = speech[i:i + chunk_size]
+            chunk = speech[i : i + chunk_size]
             segments = vad.feed(chunk)
             all_segments.extend(segments)
 
         # Feed silence to trigger finalization
         silence = self._make_silence_chunk(500)
         for i in range(0, len(silence), chunk_size):
-            chunk = silence[i:i + chunk_size]
+            chunk = silence[i : i + chunk_size]
             segments = vad.feed(chunk)
             all_segments.extend(segments)
 
@@ -85,11 +114,12 @@ class TestS5_02_MicCutoff(unittest.TestCase):
         all_segments.extend(final)
 
         # Must have at least one segment — no dropped audio
-        self.assertGreater(
-            len(all_segments), 0,
-            "500ms of speech split across 100ms chunks produced no segments. "
-            "Audio is being dropped at chunk boundaries."
-        )
+        self.assertEqual(len(all_segments), 1)
+        self.assertEqual(all_segments[0]["text"], "hello from split chunks")
+        self.assertTrue(all_segments[0]["completed"])
+        self.assertAlmostEqual(all_segments[0]["start"], 0.0, places=3)
+        self.assertGreaterEqual(all_segments[0]["end"], 0.48)
+        self.assertEqual(len(vad._remainder), 0)
 
     def test_remainder_buffer_continuity(self):
         """Remainder samples from one feed() call must be prepended to the next.
@@ -99,12 +129,9 @@ class TestS5_02_MicCutoff(unittest.TestCase):
         with those 188 samples prepended.
         """
         try:
-            from src.realtime.vad_transcriber import VadTranscriber
+            vad = self._make_vad_with_mocked_models()
         except ImportError:
             self.skipTest("VadTranscriber dependencies not available")
-
-        try:
-            vad = VadTranscriber(model="base", device="cpu")
         except Exception:
             self.skipTest("Cannot initialize VadTranscriber")
 
@@ -115,8 +142,7 @@ class TestS5_02_MicCutoff(unittest.TestCase):
 
         # Remainder should exist
         self.assertGreater(
-            len(vad._remainder), 0,
-            "After feeding a non-aligned chunk, remainder buffer should have leftover samples."
+            len(vad._remainder), 0, "After feeding a non-aligned chunk, remainder buffer should have leftover samples."
         )
 
         # Feed another chunk — remainder should be prepended (not lost)
@@ -131,9 +157,10 @@ class TestS5_02_MicCutoff(unittest.TestCase):
         # After processing, new remainder should be total_expected % 512
         expected_new_remainder = total_expected % vad.VAD_CHUNK_SIZE
         self.assertEqual(
-            len(vad._remainder), expected_new_remainder,
+            len(vad._remainder),
+            expected_new_remainder,
             f"Remainder mismatch: expected {expected_new_remainder} samples, "
-            f"got {len(vad._remainder)}. Samples may be lost across chunk boundaries."
+            f"got {len(vad._remainder)}. Samples may be lost across chunk boundaries.",
         )
 
     def test_root_cause_documented(self):
@@ -144,10 +171,12 @@ class TestS5_02_MicCutoff(unittest.TestCase):
         content = spec_path.read_text()
         # Must document the mic cutoff root cause
         self.assertTrue(
-            "mic cutoff" in content.lower() or "audio continuity" in content.lower()
-            or "chunk boundary" in content.lower() or "partial audio" in content.lower(),
+            "mic cutoff" in content.lower()
+            or "audio continuity" in content.lower()
+            or "chunk boundary" in content.lower()
+            or "partial audio" in content.lower(),
             "specs/buffer_manager.md must document mic cutoff root cause. "
-            "Look for 'mic cutoff', 'audio continuity', 'chunk boundary', or 'partial audio'."
+            "Look for 'mic cutoff', 'audio continuity', 'chunk boundary', or 'partial audio'.",
         )
 
 
@@ -167,23 +196,23 @@ class TestS5_03_WebSocketReconnection(unittest.TestCase):
         This requires a heartbeat/ping mechanism. Currently no ping
         interval is configured on the server-side WebSocket.
         """
-        from src.web.app import app
 
         # Check that the app has WebSocket ping configuration
         # or a heartbeat mechanism in the connection manager
         from src.web.app import ConnectionManager
+
         manager = ConnectionManager()
 
         # ConnectionManager should have a heartbeat/ping interval
         has_heartbeat = (
-            hasattr(manager, 'ping_interval')
-            or hasattr(manager, 'heartbeat_interval')
-            or hasattr(manager, 'connection_timeout')
+            hasattr(manager, "ping_interval")
+            or hasattr(manager, "heartbeat_interval")
+            or hasattr(manager, "connection_timeout")
         )
         self.assertTrue(
             has_heartbeat,
             "ConnectionManager must have a heartbeat/ping mechanism to detect "
-            "connection drops within 5 seconds. Currently has no such attribute."
+            "connection drops within 5 seconds. Currently has no such attribute.",
         )
 
     def test_reconnection_sends_transcript_history(self):
@@ -193,6 +222,7 @@ class TestS5_03_WebSocketReconnection(unittest.TestCase):
         but there's no mechanism for a recorder to resume a session.
         """
         from src.web.app import ConnectionManager
+
         manager = ConnectionManager()
 
         # Add some transcript history
@@ -202,14 +232,10 @@ class TestS5_03_WebSocketReconnection(unittest.TestCase):
         ]
 
         # There should be a method to get session state for reconnection
-        has_session_state = (
-            hasattr(manager, 'get_session_state')
-            or hasattr(manager, 'get_reconnection_payload')
-        )
+        has_session_state = hasattr(manager, "get_session_state") or hasattr(manager, "get_reconnection_payload")
         self.assertTrue(
             has_session_state,
-            "ConnectionManager must have get_session_state() or similar for "
-            "reconnection to preserve coaching state."
+            "ConnectionManager must have get_session_state() or similar for reconnection to preserve coaching state.",
         )
 
     def test_half_open_connection_cleanup(self):
@@ -218,17 +244,18 @@ class TestS5_03_WebSocketReconnection(unittest.TestCase):
         This requires periodic liveness checks on active_connections.
         """
         from src.web.app import ConnectionManager
+
         manager = ConnectionManager()
 
         has_cleanup = (
-            hasattr(manager, 'cleanup_stale_connections')
-            or hasattr(manager, 'check_connections')
-            or hasattr(manager, '_cleanup_task')
+            hasattr(manager, "cleanup_stale_connections")
+            or hasattr(manager, "check_connections")
+            or hasattr(manager, "_cleanup_task")
         )
         self.assertTrue(
             has_cleanup,
             "ConnectionManager must have a mechanism to clean up half-open connections. "
-            "Currently relies only on broadcast failure detection."
+            "Currently relies only on broadcast failure detection.",
         )
 
 
@@ -253,9 +280,10 @@ class TestS5_04_ContextEngine(unittest.TestCase):
         hardly_selling_files = list(kb_dir.glob("*hardly*")) + list(kb_dir.glob("*methodology*"))
 
         self.assertGreater(
-            len(hardly_selling_files), 0,
+            len(hardly_selling_files),
+            0,
             "Hardly Selling methodology must exist as a separate file in knowledge_base/ "
-            "for RAG retrieval. Currently embedded inline in prompts.py."
+            "for RAG retrieval. Currently embedded inline in prompts.py.",
         )
 
     def test_multi_source_retrieval(self):
@@ -265,14 +293,14 @@ class TestS5_04_ContextEngine(unittest.TestCase):
 
         # ScriptRetriever should accept multiple stores or have multi-source capability
         has_multi_source = (
-            hasattr(ScriptRetriever, 'add_source')
-            or 'sources' in ScriptRetriever.__init__.__code__.co_varnames
-            or 'stores' in ScriptRetriever.__init__.__code__.co_varnames
+            hasattr(ScriptRetriever, "add_source")
+            or "sources" in ScriptRetriever.__init__.__code__.co_varnames
+            or "stores" in ScriptRetriever.__init__.__code__.co_varnames
         )
         self.assertTrue(
             has_multi_source,
             "ScriptRetriever must support multi-source retrieval (script + methodology). "
-            "Currently only supports a single store."
+            "Currently only supports a single store.",
         )
 
     def test_phase_specific_methodology_selection(self):
@@ -286,7 +314,7 @@ class TestS5_04_ContextEngine(unittest.TestCase):
                 "hardly" if isinstance(blueprint, str) else "",
                 blueprint.lower() if isinstance(blueprint, str) else "",
                 f"Blueprint for '{stage}' must reference Hardly Selling techniques. "
-                f"Currently uses generic prompts without methodology references."
+                f"Currently uses generic prompts without methodology references.",
             )
 
 
@@ -307,14 +335,13 @@ class TestS5_05_Latency(unittest.TestCase):
         Must use stream=True for incremental display.
         """
         from src.realtime.analysis_orchestrator import StreamingAnalyzer
-        import inspect
 
         source = inspect.getsource(StreamingAnalyzer.analyze)
         self.assertIn(
             "stream",
             source.lower(),
             "StreamingAnalyzer.analyze() must use streaming responses (stream=True). "
-            "Currently uses blocking non-streaming calls."
+            "Currently uses blocking non-streaming calls.",
         )
 
     def test_model_fallback_on_timeout(self):
@@ -325,37 +352,40 @@ class TestS5_05_Latency(unittest.TestCase):
         from src.realtime.analysis_orchestrator import StreamingAnalyzer
 
         has_fallback = (
-            hasattr(StreamingAnalyzer, 'fallback_model')
-            or hasattr(StreamingAnalyzer, '_try_with_fallback')
-            or 'fallback' in inspect.getsource(StreamingAnalyzer.__init__).lower()
+            hasattr(StreamingAnalyzer, "fallback_model")
+            or hasattr(StreamingAnalyzer, "_try_with_fallback")
+            or "fallback" in inspect.getsource(StreamingAnalyzer.__init__).lower()
         )
 
-        import inspect
         self.assertTrue(
             has_fallback,
             "StreamingAnalyzer must have a fallback model for when primary exceeds 5s. "
-            "Currently no fallback mechanism exists."
+            "Currently no fallback mechanism exists.",
         )
 
     def test_latency_benchmark_infrastructure(self):
         """Latency benchmark test must record and assert p50 < 3s and p95 < 5s."""
-        benchmark_files = list(Path(__file__).parent.glob("*latency*")) + \
-                         list(Path(__file__).parent.glob("*benchmark*"))
+        benchmark_files = list(Path(__file__).parent.glob("*latency*")) + list(
+            Path(__file__).parent.glob("*benchmark*")
+        )
 
         # Check for a benchmark that actually asserts p50/p95 thresholds
         found_assertions = False
         for f in benchmark_files:
             content = f.read_text()
             # Must have actual threshold assertions, not just mentions
-            if ("p50" in content and "p95" in content and
-                ("assert" in content.lower() or "< 3" in content or "< 5" in content)):
+            if (
+                "p50" in content
+                and "p95" in content
+                and ("assert" in content.lower() or "< 3" in content or "< 5" in content)
+            ):
                 found_assertions = True
                 break
 
         self.assertTrue(
             found_assertions,
             "Must have a latency benchmark asserting p50 < 3s and p95 < 5s thresholds. "
-            "test_llm_latency.py exists but lacks threshold assertions."
+            "test_llm_latency.py exists but lacks threshold assertions.",
         )
 
 
@@ -372,14 +402,15 @@ class TestS5_06_MeetingNotetaker(unittest.TestCase):
     def test_vexa_integration_module_exists(self):
         """A Vexa integration module must exist."""
         vexa_files = (
-            list(Path(__file__).parent.parent.glob("src/**/vexa*")) +
-            list(Path(__file__).parent.parent.glob("src/**/notetaker*")) +
-            list(Path(__file__).parent.parent.glob("src/**/meeting_bot*"))
+            list(Path(__file__).parent.parent.glob("src/**/vexa*"))
+            + list(Path(__file__).parent.parent.glob("src/**/notetaker*"))
+            + list(Path(__file__).parent.parent.glob("src/**/meeting_bot*"))
         )
         self.assertGreater(
-            len(vexa_files), 0,
+            len(vexa_files),
+            0,
             "Must have a Vexa integration module (src/**/vexa*.py or similar). "
-            "No meeting bot integration code exists yet."
+            "No meeting bot integration code exists yet.",
         )
 
     def test_vexa_setup_documented(self):
@@ -388,9 +419,9 @@ class TestS5_06_MeetingNotetaker(unittest.TestCase):
         setup_files = list(docs_dir.glob("*vexa*")) + list(docs_dir.glob("*notetaker-setup*"))
 
         self.assertGreater(
-            len(setup_files), 0,
-            "Must have Vexa setup documentation in docs/. "
-            "docs/notetaker-research.md exists but no setup instructions."
+            len(setup_files),
+            0,
+            "Must have Vexa setup documentation in docs/. docs/notetaker-research.md exists but no setup instructions.",
         )
 
     def test_privacy_compliance_documented(self):
@@ -401,15 +432,16 @@ class TestS5_06_MeetingNotetaker(unittest.TestCase):
         compliance_found = False
         for doc in docs_dir.glob("*.md"):
             content = doc.read_text().lower()
-            if ("compliance" in content or "gdpr" in content or "consent" in content) and \
-               ("vexa" in content or "notetaker" in content or "meeting" in content):
+            if ("compliance" in content or "gdpr" in content or "consent" in content) and (
+                "vexa" in content or "notetaker" in content or "meeting" in content
+            ):
                 compliance_found = True
                 break
 
         self.assertTrue(
             compliance_found,
             "Privacy/compliance implications for meeting capture must be documented. "
-            "Need dedicated section covering consent, data handling, GDPR."
+            "Need dedicated section covering consent, data handling, GDPR.",
         )
 
 
@@ -427,13 +459,12 @@ class TestS5_07_Security(unittest.TestCase):
     def test_threat_model_document_exists(self):
         """Threat model must exist covering audio, API keys, WebSocket."""
         threat_model_paths = (
-            list(Path(__file__).parent.parent.glob("docs/*threat*")) +
-            list(Path(__file__).parent.parent.glob("specs/*threat*")) +
-            list(Path(__file__).parent.parent.glob("*THREAT*"))
+            list(Path(__file__).parent.parent.glob("docs/*threat*"))
+            + list(Path(__file__).parent.parent.glob("specs/*threat*"))
+            + list(Path(__file__).parent.parent.glob("*THREAT*"))
         )
         self.assertGreater(
-            len(threat_model_paths), 0,
-            "Must have a threat model document. None found in docs/ or specs/."
+            len(threat_model_paths), 0, "Must have a threat model document. None found in docs/ or specs/."
         )
 
     def test_no_hardcoded_secrets(self):
@@ -455,32 +486,26 @@ class TestS5_07_Security(unittest.TestCase):
                 if stripped.startswith("#") or "getenv" in line or "os.environ" in line:
                     continue
                 # Check for hardcoded key assignments
-                if ('api_key' in line.lower() or 'token' in line.lower()) and '=' in line:
+                if ("api_key" in line.lower() or "token" in line.lower()) and "=" in line:
                     for pattern in secret_patterns[:2]:  # Check prefixes
                         if f'"{pattern}' in line or f"'{pattern}" in line:
                             violations.append(f"{py_file.name}:{line_num}: {stripped[:80]}")
 
-        self.assertEqual(
-            len(violations), 0,
-            f"Hardcoded secrets found:\n" + "\n".join(violations)
-        )
+        self.assertEqual(len(violations), 0, "Hardcoded secrets found:\n" + "\n".join(violations))
 
     def test_websocket_validates_origin(self):
         """WebSocket endpoint must validate Origin header."""
         app_path = Path(__file__).parent.parent / "src" / "web" / "app.py"
         content = app_path.read_text()
 
-        origin_check = (
-            "origin" in content.lower() and
-            ("allowed_origins" in content.lower() or
-             "check_origin" in content.lower() or
-             "validate_origin" in content.lower() or
-             "cors" in content.lower())
+        origin_check = "origin" in content.lower() and (
+            "allowed_origins" in content.lower()
+            or "check_origin" in content.lower()
+            or "validate_origin" in content.lower()
+            or "cors" in content.lower()
         )
         self.assertTrue(
-            origin_check,
-            "WebSocket endpoints must validate Origin header. "
-            "No origin validation found in app.py."
+            origin_check, "WebSocket endpoints must validate Origin header. No origin validation found in app.py."
         )
 
     def test_prompt_injection_mitigations(self):
@@ -495,17 +520,23 @@ class TestS5_07_Security(unittest.TestCase):
                 for doc in search_dir.glob("*.md"):
                     content = doc.read_text().lower()
                     # Must have SPECIFIC mitigations, not just a mention
-                    if ("prompt injection" in content and
-                        ("mitigation" in content or "defense" in content or
-                         "sanitiz" in content or "input validation" in content) and
-                        ("transcript" in content or "audio" in content or "user input" in content)):
+                    if (
+                        "prompt injection" in content
+                        and (
+                            "mitigation" in content
+                            or "defense" in content
+                            or "sanitiz" in content
+                            or "input validation" in content
+                        )
+                        and ("transcript" in content or "audio" in content or "user input" in content)
+                    ):
                         has_specific_mitigations = True
                         break
 
         self.assertTrue(
             has_specific_mitigations,
             "Must document specific prompt injection mitigations for transcript/audio input. "
-            "A passing mention in MVP reflection is insufficient — need a dedicated security section."
+            "A passing mention in MVP reflection is insufficient — need a dedicated security section.",
         )
 
     def test_rag_integrity_check_on_startup(self):
@@ -520,15 +551,19 @@ class TestS5_07_Security(unittest.TestCase):
         for py_file in rag_dir.rglob("*.py"):
             content = py_file.read_text()
             # Must have a dedicated integrity check, not just a generic verify/build
-            if ("integrity_check" in content or "verify_knowledge_base" in content or
-                "checksum" in content or "hash_check" in content):
+            if (
+                "integrity_check" in content
+                or "verify_knowledge_base" in content
+                or "checksum" in content
+                or "hash_check" in content
+            ):
                 integrity_found = True
                 break
 
         self.assertTrue(
             integrity_found,
             "RAG knowledge base must have explicit integrity_check() or verify_knowledge_base() "
-            "function. Generic build/verify functions don't count."
+            "function. Generic build/verify functions don't count.",
         )
 
 
@@ -545,14 +580,12 @@ class TestS5_08_OverlayUI(unittest.TestCase):
     def test_overlay_module_exists(self):
         """Desktop overlay module must exist."""
         overlay_files = (
-            list(Path(__file__).parent.parent.glob("src/**/overlay*")) +
-            list(Path(__file__).parent.parent.glob("src/**/widget*")) +
-            list(Path(__file__).parent.parent.glob("src/**/desktop*"))
+            list(Path(__file__).parent.parent.glob("src/**/overlay*"))
+            + list(Path(__file__).parent.parent.glob("src/**/widget*"))
+            + list(Path(__file__).parent.parent.glob("src/**/desktop*"))
         )
         self.assertGreater(
-            len(overlay_files), 0,
-            "Must have a desktop overlay module. "
-            "No overlay/widget/desktop module found in src/."
+            len(overlay_files), 0, "Must have a desktop overlay module. No overlay/widget/desktop module found in src/."
         )
 
     def test_overlay_is_always_on_top(self):
@@ -566,15 +599,16 @@ class TestS5_08_OverlayUI(unittest.TestCase):
         for f in overlay_files:
             if f.suffix == ".py":
                 content = f.read_text()
-                if "always_on_top" in content.lower() or "topmost" in content.lower() or \
-                   "set_keep_above" in content.lower() or "wm_attributes" in content.lower():
+                if (
+                    "always_on_top" in content.lower()
+                    or "topmost" in content.lower()
+                    or "set_keep_above" in content.lower()
+                    or "wm_attributes" in content.lower()
+                ):
                     found_always_on_top = True
                     break
 
-        self.assertTrue(
-            found_always_on_top,
-            "Overlay must have always-on-top window flag."
-        )
+        self.assertTrue(found_always_on_top, "Overlay must have always-on-top window flag.")
 
     def test_hotkey_binding_exists(self):
         """Overlay must have a hotkey to show/hide."""
@@ -587,8 +621,12 @@ class TestS5_08_OverlayUI(unittest.TestCase):
         for f in overlay_files:
             if f.suffix == ".py":
                 content = f.read_text()
-                if "hotkey" in content.lower() or "keyboard" in content.lower() or \
-                   "shortcut" in content.lower() or "keybind" in content.lower():
+                if (
+                    "hotkey" in content.lower()
+                    or "keyboard" in content.lower()
+                    or "shortcut" in content.lower()
+                    or "keybind" in content.lower()
+                ):
                     found_hotkey = True
                     break
 

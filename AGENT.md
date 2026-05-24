@@ -57,6 +57,9 @@ uv run ruff check src/ tests/
 uv run ruff format --check src/ tests/
 uv run mypy src/ --ignore-missing-imports
 uv run pytest tests/ -v
+
+# External E2E pipeline tests require WhisperLiveKit + web services running
+RUN_E2E_PIPELINE=1 uv run pytest tests/test_e2e_pipeline.py -q
 ```
 
 ## Critical Rules

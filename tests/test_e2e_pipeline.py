@@ -20,12 +20,18 @@ Usage:
 import argparse
 import asyncio
 import json
-import struct
+import os
 import sys
 import time
 from pathlib import Path
 
+import pytest
 import websockets
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("RUN_E2E_PIPELINE") != "1",
+    reason="requires running WhisperLiveKit and sales-ai-web services; set RUN_E2E_PIPELINE=1",
+)
 
 # Configuration
 WHISPER_HOST = "localhost"
@@ -45,7 +51,6 @@ def load_audio_as_s16le(path: Path) -> bytes:
     """Load an audio file and return raw s16le PCM at 16kHz mono."""
     try:
         import soundfile as sf
-        import numpy as np
     except ImportError:
         print("ERROR: soundfile and numpy required. Install with: pip install soundfile numpy")
         sys.exit(1)
@@ -59,6 +64,7 @@ def load_audio_as_s16le(path: Path) -> bytes:
     # Resample to 16kHz if needed
     if sr != SAMPLE_RATE:
         from scipy.signal import resample
+
         num_samples = int(len(data) * SAMPLE_RATE / sr)
         data = resample(data, num_samples).astype("float32")
 
@@ -69,13 +75,10 @@ def load_audio_as_s16le(path: Path) -> bytes:
 
 def chunk_audio(pcm_bytes: bytes, chunk_size_bytes: int) -> list[bytes]:
     """Split PCM bytes into chunks."""
-    return [
-        pcm_bytes[i : i + chunk_size_bytes]
-        for i in range(0, len(pcm_bytes), chunk_size_bytes)
-    ]
+    return [pcm_bytes[i : i + chunk_size_bytes] for i in range(0, len(pcm_bytes), chunk_size_bytes)]
 
 
-class TestResult:
+class PipelineTestResult:
     def __init__(self, name: str):
         self.name = name
         self.passed = False
@@ -107,9 +110,9 @@ class TestResult:
 # ─── Test 1: WhisperLiveKit Connectivity ───────────────────────────
 
 
-async def test_connectivity() -> TestResult:
+async def test_connectivity() -> PipelineTestResult:
     """Verify WhisperLiveKit WebSocket accepts connections and sends config."""
-    result = TestResult("WhisperLiveKit Connectivity")
+    result = PipelineTestResult("WhisperLiveKit Connectivity")
 
     try:
         url = f"ws://{WHISPER_HOST}:{WHISPER_PORT}/asr"
@@ -141,9 +144,9 @@ async def test_connectivity() -> TestResult:
 # ─── Test 2: Audio → Transcription ─────────────────────────────────
 
 
-async def test_transcription() -> TestResult:
+async def test_transcription() -> PipelineTestResult:
     """Send real audio to WhisperLiveKit and verify transcription."""
-    result = TestResult("Audio → Transcription")
+    result = PipelineTestResult("Audio → Transcription")
 
     if not AUDIO_FILE.exists():
         result.fail(f"Test audio not found: {AUDIO_FILE}")
@@ -159,7 +162,7 @@ async def test_transcription() -> TestResult:
 
         async with websockets.connect(url, close_timeout=5) as ws:
             # Receive config
-            config_msg = await asyncio.wait_for(ws.recv(), timeout=5)
+            await asyncio.wait_for(ws.recv(), timeout=5)
 
             # Send audio chunks at roughly real-time pace
             send_start = time.time()
@@ -225,9 +228,9 @@ async def test_transcription() -> TestResult:
 # ─── Test 3: Full Pipeline (Web App) ──────────────────────────────
 
 
-async def test_full_pipeline() -> TestResult:
+async def test_full_pipeline() -> PipelineTestResult:
     """Test the full pipeline: audio → transcription → summary → recommendation."""
-    result = TestResult("Full Pipeline (Web App)")
+    result = PipelineTestResult("Full Pipeline (Web App)")
 
     if not AUDIO_FILE.exists():
         result.fail(f"Test audio not found: {AUDIO_FILE}")
@@ -345,7 +348,7 @@ async def test_full_pipeline() -> TestResult:
 # ─── Runner ────────────────────────────────────────────────────────
 
 
-async def run_tests(test_names: list[str]) -> list[TestResult]:
+async def run_tests(test_names: list[str]) -> list[PipelineTestResult]:
     tests = {
         "connectivity": test_connectivity,
         "transcription": test_transcription,
