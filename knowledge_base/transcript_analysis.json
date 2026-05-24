@@ -1,0 +1,1109 @@
+{
+  "generated": "2026-02-18",
+  "total_calls": 30,
+  "closes": 9,
+  "losses": 7,
+  "unknown": 14,
+  "archetype_distribution": {
+    "pain_buyer": 7,
+    "vision_buyer": 11,
+    "convenience_buyer": 3,
+    "crisis_buyer": 5,
+    "tire_kicker": 0,
+    "unclear": 4
+  },
+  "calls": [
+    {
+      "prospect_name": "Abdu Agial",
+      "date": "2025-10-18",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Currently employed in IT operations",
+        "Wants to learn DevOps to advance career",
+        "Set 3-6 month timeline for junior DevOps role at $90-100K",
+        "Long-term goal of senior DevOps in 3 years with AI/MLOps",
+        "Not in financial distress, methodical about decision"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Declined immediate deposit, rescheduled follow-up to November 18th to manage travel expenses",
+      "key_turning_point": "When Austin presented the $2800 price and Abdu said upfront payment was challenging due to travel and financial constraints",
+      "discovery_questions_used": [
+        "Why did you decide to book the call with us today?",
+        "What's the biggest challenge you're facing right now?",
+        "What have you tried so far to fix this?",
+        "If nothing changes in 6-12 months what happens?"
+      ],
+      "objections_raised": [
+        "Upfront payment is challenging due to travel costs",
+        "Needs time to calculate expenses and budget"
+      ],
+      "objections_handled_well": [
+        "Offered multiple payment plan options (3-month, 4-month, 6-month Split It)"
+      ],
+      "objections_mishandled": [
+        "Let prospect push to a month-out follow-up without securing a deposit"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Prospect was interested but non-committal. Price was $2800 (pre-increase). No urgency created. Follow-up scheduled for Nov 18."
+    },
+    {
+      "prospect_name": "Abdul Ameti",
+      "date": "2025-10-17",
+      "outcome": "loss",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Employed in GRC/platform engineering in Berlin",
+        "Wants to lead an automation project at his company",
+        "Not looking for a new job - wants to upskill",
+        "Described desire to build tools with Go",
+        "Ambitious project to change how business units operate"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Refused to make monetary transaction same day. Redirected to free community. Unique use case (not job seeking) made fit unclear.",
+      "key_turning_point": "When Austin offered 3-day money-back guarantee and Abdul firmly stated he would not engage in a monetary transaction same day",
+      "discovery_questions_used": [
+        "What brought you on the call today?",
+        "How long has this been going on for you?",
+        "What have you tried so far to fix this problem?",
+        "Why haven't you figured this out on your own?"
+      ],
+      "objections_raised": [
+        "Will not make same-day purchase decision",
+        "Needs to consider the pricing",
+        "Unique use case - not job seeking, wants to build internal tool"
+      ],
+      "objections_handled_well": [
+        "Pivoted to free community as low-commitment entry point"
+      ],
+      "objections_mishandled": [
+        "Did not create urgency or scarcity",
+        "Did not tie program value to Abdul's specific GRC automation project"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Unusual prospect - employed, not job seeking, wanted DevOps skills for internal company project. Called from Berlin at 11:30pm. Strong technical background but unconventional fit."
+    },
+    {
+      "prospect_name": "Anthony Martinez",
+      "date": "2025-12-01",
+      "outcome": "loss",
+      "revenue": null,
+      "buyer_archetype": "unclear",
+      "archetype_confidence": "low",
+      "archetype_signals": [
+        "No-show to scheduled call",
+        "No conversation to assess archetype"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Prospect no-showed. Austin left voicemail and planned follow-up email.",
+      "key_turning_point": "No conversation occurred - prospect missed scheduled call entirely",
+      "discovery_questions_used": [],
+      "objections_raised": [],
+      "objections_handled_well": [],
+      "objections_mishandled": [],
+      "script_phases_completed": [],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Complete no-show. Austin left professional voicemail referencing possible prior conversation with Laura Hall. Very short recording, mostly Austin talking to himself."
+    },
+    {
+      "prospect_name": "Colin Valerio",
+      "date": "2025-10-16",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Currently employed as project manager for platform team",
+        "Director and tech leads are supportive of his transition",
+        "Aiming for junior platform engineer role at $120-130K",
+        "3-year goal to reach senior level",
+        "Analysis paralysis from self-learning, not in distress"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Needs to discuss $3500 investment with partner. Follow-up call scheduled for Thursday.",
+      "key_turning_point": "When Colin said he needs to discuss the investment with his partner before committing",
+      "discovery_questions_used": [
+        "What brought you on the call today?",
+        "What's been your biggest challenge right now?",
+        "If nothing changes in 6-12 months what happens?",
+        "What would be the goal in the next 3-6 months?"
+      ],
+      "objections_raised": [
+        "Needs to discuss investment with partner",
+        "Previous bad bootcamp experience creating hesitancy"
+      ],
+      "objections_handled_well": [
+        "Addressed bootcamp concern by differentiating CubeCraft's results guarantee",
+        "Shared success stories (Leonard, Jacob) to build confidence"
+      ],
+      "objections_mishandled": [
+        "No deposit secured to lock in commitment"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Good prospect with internal company support. Bad bootcamp history made him cautious. Partner approval needed. $3500 price point."
+    },
+    {
+      "prospect_name": "Cubahiro Fandiri",
+      "date": "2025-10-03",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "crisis_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Struggled since 2023 to re-enter job market",
+        "Repeatedly rejected for lacking experience",
+        "Felt discouraged and took a pause from job searching",
+        "Budget constraints - cannot pay upfront",
+        "Chose 4-month installment plan but delayed start by couple weeks"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Opted for 4-month installment plan but requested to delay initial payment for a couple weeks to gather funds",
+      "key_turning_point": "When Cubahiro chose the 4-month installment option at $875/month but could not start immediately",
+      "discovery_questions_used": [
+        "Can you tell me why you decided to book the call?",
+        "How long have you been looking to make this transition?",
+        "Why do you think that hasn't worked?",
+        "How does that feel?",
+        "Do you feel like you have the skills or need more skill building?"
+      ],
+      "objections_raised": [
+        "Cannot afford upfront payment",
+        "Concerned about work gaps on resume",
+        "Needs a couple weeks to gather funds"
+      ],
+      "objections_handled_well": [
+        "Offered flexible payment plans (2, 3, or 4 month splits)",
+        "Addressed resume gap concerns with internship program and framing advice"
+      ],
+      "objections_mishandled": [
+        "Let prospect delay without securing even a small deposit"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Very long call (72K chars). Prospect verbally committed to 4-month plan but delayed payment. Classic crisis buyer - needs it but money is tight. Internship program was a strong selling point for experience gap."
+    },
+    {
+      "prospect_name": "David Edghill",
+      "date": "2025-12-03",
+      "outcome": "loss",
+      "revenue": null,
+      "buyer_archetype": "unclear",
+      "archetype_confidence": "low",
+      "archetype_signals": [
+        "Insufficient conversation to classify",
+        "No meaningful dialogue occurred"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Call had insufficient conversation. Gemini could not produce a summary. Only 3.5 minutes of recording.",
+      "key_turning_point": "No meaningful conversation occurred",
+      "discovery_questions_used": [],
+      "objections_raised": [],
+      "objections_handled_well": [],
+      "objections_mishandled": [],
+      "script_phases_completed": [],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Empty call - only 3.5 minutes recorded with insufficient conversation. Possible no-show or technical issues."
+    },
+    {
+      "prospect_name": "David Tankersley",
+      "date": "2025-12-05",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "pain_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Laid off from software QA position",
+        "Sent 1500+ resumes in 18 months with only 2 interviews",
+        "Surviving on unemployment then disability plus spouse income",
+        "Financial situation described as dire",
+        "Self-esteem crushed from repeated setbacks",
+        "Described situation as disheartening and disillusioning"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Financial constraints. Exploring buy-now-pay-later through wop.com. Follow-up scheduled for Tuesday at 1:30pm PT.",
+      "key_turning_point": "When Dave expressed that the financial commitment encourages discipline and rated confidence at 7.5/10 - nearly convinced but money is the real blocker",
+      "discovery_questions_used": [
+        "Are you living the dream or still working on it?",
+        "What role are you aiming for and what's the pay?",
+        "What would make your wife supportive?"
+      ],
+      "objections_raised": [
+        "Financial constraints - on disability/spouse income",
+        "Hit to self-esteem making commitment difficult",
+        "Currently in Coursera program (competing solution)"
+      ],
+      "objections_handled_well": [
+        "Introduced buy-now-pay-later through wop.com for up to 24 months",
+        "Positioned program as path to believing in himself again",
+        "Differentiated from Coursera's lack of practical assumptions"
+      ],
+      "objections_mishandled": [
+        "Could have more directly addressed the Coursera comparison"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Classic pain buyer - laid off, financially struggling, self-esteem damaged. 7.5/10 confidence rating. Follow-up with wife involved. Buy-now-pay-later solution offered. Strong emotional connection made."
+    },
+    {
+      "prospect_name": "Derrick Gill",
+      "date": "2025-11-06",
+      "outcome": "close",
+      "revenue": "$3500",
+      "buyer_archetype": "pain_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Took 18 months to land current role after previous layoff",
+        "Feels stuck in narrow CI/CD engineer role (GitHub Actions only)",
+        "31 years old, single, father passed away",
+        "Self-image was crushed, described feeling 'washed'",
+        "Desperate to regain confidence and competence",
+        "Linux skills dropped from 7 to 5 during unemployment"
+      ],
+      "close_trigger": "Agreed to $500 deposit with 3-month payment plan for remaining $3000. Emotional alignment with rebuilding career after personal loss and unemployment drove commitment.",
+      "loss_reason": null,
+      "key_turning_point": "When Austin acknowledged Derrick's personal losses and positioned the program as the structured path to regain confidence - Derrick rated enthusiasm at 9/10",
+      "discovery_questions_used": [
+        "Walk me through why you decided to book the call",
+        "What's your technical baseline? Scale of 1-10",
+        "How long has this been going on?",
+        "On a scale of 1-10 how excited are you about this process?"
+      ],
+      "objections_raised": [
+        "Needs time to stabilize finances",
+        "Cannot pay full amount upfront"
+      ],
+      "objections_handled_well": [
+        "Offered flexible $500 deposit + 3-month payment plan",
+        "Said 'we will move mountains for the right people'",
+        "Connected personal story of loss to program's transformative potential"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Strong close with deposit + payment plan. Emotional connection was key - personal loss (father's death), unemployment, feeling 'washed'. 9/10 enthusiasm. $500 deposit Wednesday, $3000 over 3 months."
+    },
+    {
+      "prospect_name": "Derron Jackson",
+      "date": "2025-10-30",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "medium",
+      "archetype_signals": [
+        "Currently employed as serverless engineer at Ford Motors",
+        "5 years in automotive industry",
+        "Wants to transition to Google or FinTech",
+        "Fear of layoffs and hybrid work mandate motivating change",
+        "Interested in infrastructure/consulting roles",
+        "Not financially desperate but wants progression"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Financial constraints from major roof repair. Said he needs time to sort out contractor payments. Rated interest at 10/10 but money was blocker.",
+      "key_turning_point": "When Derron rated interest at 10/10 but then revealed the roof repair expenses that made the $3500 impossible right now",
+      "discovery_questions_used": [
+        "Walk me through why you decided to book the call",
+        "What happens if nothing changes?",
+        "Where do you see yourself - what company type?"
+      ],
+      "objections_raised": [
+        "Recent roof repair expenses",
+        "$3500 felt expensive",
+        "Insurance didn't cover full roof cost"
+      ],
+      "objections_handled_well": [
+        "Offered wop.com buy-now-pay-later option",
+        "Framed $3500 vs $158K annual DevOps salary",
+        "Created urgency with potential price increase and layoff reality"
+      ],
+      "objections_mishandled": [
+        "Pushed hard on urgency/scarcity after prospect already said money was tight"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "10/10 interest but genuine financial blocker. Directed to free community as interim step. Monday deadline given for decision. Vision buyer with some pain elements (layoff fear)."
+    },
+    {
+      "prospect_name": "Dimitrios Papanikolaou",
+      "date": "2025-10-22",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Working two remote jobs in Europe earning 110K EUR",
+        "Wants to earn same with single job",
+        "Aspires to transition to consulting",
+        "Motivated by personal brand building",
+        "Not in distress - comfortable but wants more"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Needs a few days to consider. Decision expected by Monday. Payment plan available.",
+      "key_turning_point": "When Dimitrios said he needs a few days to decide despite having initially stated readiness for change",
+      "discovery_questions_used": [
+        "What's the main thing that motivated you to book the call?",
+        "How long has this been going on?",
+        "What specific skills are you missing?"
+      ],
+      "objections_raised": [
+        "Needs time to consider the investment",
+        "Wants to think before committing"
+      ],
+      "objections_handled_well": [
+        "Offered 4-month payment plan",
+        "Connected program to consulting aspirations"
+      ],
+      "objections_mishandled": [
+        "No deposit secured to lock commitment",
+        "Let prospect leave with vague 'by Monday' timeline"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Strong prospect with unique dual-employment situation. Wants to consolidate to one high-paying job. European market. Consulting aspiration is unique angle. $3500 = ~3000 EUR."
+    },
+    {
+      "prospect_name": "Esteban Masegosa",
+      "date": "2025-11-03",
+      "outcome": "close",
+      "revenue": "$3500",
+      "buyer_archetype": "crisis_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Currently unemployed for one year",
+        "In long recruitment process needing Kubernetes knowledge",
+        "Key technical interview scheduled for November 12th",
+        "Expressed passion but noted price must be manageable given situation",
+        "Agreed to 4-month installment plan (~760 EUR/month)"
+      ],
+      "close_trigger": "Urgency of upcoming November 12th technical interview requiring Kubernetes knowledge. Strong existing skills (Linux 9/10, containers 8/10) meant he could see fast ROI. Agreed to 4-month installment plan.",
+      "loss_reason": null,
+      "key_turning_point": "When Austin assessed his high technical baseline and said he would 'fly through the material' - this matched Esteban's need for fast results before his interview",
+      "discovery_questions_used": [
+        "Is this a role you're confident you'll land?",
+        "What's your personal goal timeline?",
+        "Scale of 1-10 familiarity with Linux, containers, Kubernetes?"
+      ],
+      "objections_raised": [
+        "Currently unemployed - price must be manageable",
+        "Wants to review contract before signing"
+      ],
+      "objections_handled_well": [
+        "Offered 4-month installment plan",
+        "Emphasized quick ROI given existing skills",
+        "Agreed to contract review call next day"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Clean close with installment plan. Unique situation - already high-skilled but needed Kubernetes specifically for upcoming interview. 8-12 hours/day available for training. Contract review scheduled next day."
+    },
+    {
+      "prospect_name": "Fernando Souza",
+      "date": "2026-01-09",
+      "outcome": "close",
+      "revenue": "$3440",
+      "buyer_archetype": "convenience_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Return prospect - had previous conversation with Austin",
+        "Employed data engineer wanting to transition to DevOps",
+        "Business-like and practical tone throughout",
+        "Minimal objections - agreed to proceed quickly",
+        "Said he would likely pay straight away",
+        "Discussed payment methods matter-of-factly"
+      ],
+      "close_trigger": "Fernando was already pre-sold from a previous conversation. This was essentially a follow-up close. He agreed to pay and they scheduled a call to finalize payment logistics (iDeal vs credit card).",
+      "loss_reason": null,
+      "key_turning_point": "When Fernando confirmed his goals hadn't changed and he was ready to commit - the call was about logistics not persuasion",
+      "discovery_questions_used": [
+        "How's everything going?",
+        "Is your goal still the same?",
+        "Are you ready to commit and start?"
+      ],
+      "objections_raised": [
+        "Checking credit card limits for payment"
+      ],
+      "objections_handled_well": [
+        "Offered to check iDeal payment compatibility for Netherlands",
+        "Presented both full-pay and installment options clearly"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Temp Check", "Close"],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Known close from playbook data ($12K day, Jan 2026). This was a follow-up/onboarding call. Very short and transactional. Fernando is Netherlands-based. Price quoted in EUR: 3439.64 full or 4127.57 installments."
+    },
+    {
+      "prospect_name": "Gabriel Sevilla",
+      "date": "2025-10-15",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Currently employed as software engineer",
+        "Sees layoffs in company and worried about AI replacing coding",
+        "Wants to add DevOps to existing skillset for stability",
+        "Strong Docker/container skills (7-8/10)",
+        "Not in financial distress - concerned about cash flow for the course"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Price higher than expected. Needs to discuss with girlfriend as they share finances. Rescheduled to Monday.",
+      "key_turning_point": "When Gabriel said the price was higher than expected and he shares finances with his girlfriend",
+      "discovery_questions_used": [
+        "Walk me through why you decided to book the call",
+        "Why now?",
+        "Scale of 1-10 familiarity with Linux?"
+      ],
+      "objections_raised": [
+        "Price higher than expected",
+        "Cash flow concerns",
+        "Needs partner approval for shared finances",
+        "Only 5 hours/week available"
+      ],
+      "objections_handled_well": [
+        "Offered 4-installment plan at 751 EUR each",
+        "Confirmed 5 hours/week is sufficient",
+        "Provided perspective on AI's limitations in production environments"
+      ],
+      "objections_mishandled": [
+        "No deposit to anchor commitment before partner discussion"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "European prospect (EUR pricing). Good technical foundation. AI anxiety as motivation is interesting. Shared finances with girlfriend is the real gate."
+    },
+    {
+      "prospect_name": "Harsh Singhal",
+      "date": "2025-11-10",
+      "outcome": "loss",
+      "revenue": null,
+      "buyer_archetype": "convenience_buyer",
+      "archetype_confidence": "medium",
+      "archetype_signals": [
+        "15-16 years AI/ML experience, works at Glean in Bay Area",
+        "Senior career position, not looking for a job",
+        "Wants bare-metal infrastructure as a hobby project",
+        "Money not the issue - time and travel are",
+        "Business-like assessment of value vs commitment"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Cannot commit this year due to travel to India and family time constraints. Only 2-3 hours/week available. Hobby project, not career necessity.",
+      "key_turning_point": "When Harsh stated he cannot commit this year due to travel and family - the need was not urgent enough to override scheduling",
+      "discovery_questions_used": [
+        "What's the main thing that motivated you to book this call?",
+        "What's your end goal within 6-12 months?",
+        "Scale of 1-10 Linux, containers, Kubernetes?"
+      ],
+      "objections_raised": [
+        "Cannot commit this year due to travel",
+        "Limited time (2-3 hours/week)",
+        "This is a hobby project not career necessity"
+      ],
+      "objections_handled_well": [
+        "Austin went off-script recognizing unique case",
+        "Positioned Harsh as valuable community member Misha would want",
+        "Suggested free community and future mastermind group"
+      ],
+      "objections_mishandled": [
+        "No urgency lever available - hobby projects can always wait"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Unusual prospect - extremely senior (15+ years AI/ML), works at Glean. Wants to learn bare metal for hobby/teaching. Austin correctly identified this as unique and went off-script. No close possible without urgency."
+    },
+    {
+      "prospect_name": "Jeremy Farr",
+      "date": "2025-12-29",
+      "outcome": "close",
+      "revenue": "$4000",
+      "buyer_archetype": "pain_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Deeply unhappy in current 'digital products leader' role",
+        "Feels pigeonholed and lacking agency",
+        "Describes going to work with dread and anxiety",
+        "Plans to leave after February bonus regardless",
+        "16 years at a bank as COO, then failed startup",
+        "Seeking 'purpose and mastery' - emotional language",
+        "Willing to take pay cut for meaningful work"
+      ],
+      "close_trigger": "Jeremy rated certainty at 'solid 9' and said he was 'ready to go'. Price of $4000 (holiday promo) was significantly lower than anticipated. He accepted immediately, saying he needed the 'investment and pressure' to enact change.",
+      "loss_reason": null,
+      "key_turning_point": "When Austin strongly countered the CIO's age-related discouragement about learning Kubernetes at 45 by reframing Jeremy's decades of experience as a massive asset that most DevOps engineers lack",
+      "discovery_questions_used": [
+        "Are you living the dream or still working on it?",
+        "What specifically made you pigeonholed?",
+        "What role would give you agency?",
+        "Does your wife support this?"
+      ],
+      "objections_raised": [
+        "Self-doubt about learning Kubernetes at 45",
+        "CIO colleague discouraged him from learning K8s"
+      ],
+      "objections_handled_well": [
+        "Powerfully reframed age as asset not liability",
+        "Connected Jeremy's COO experience to unique DevOps value proposition",
+        "Positioned program as path to purpose and mastery",
+        "Price reveal below expectations created relief and momentum"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Known close from playbook ($4K, Dec 2025). Masterful handling of age objection. Jeremy is 45 with COO experience. Holiday promo pricing at $4000. Strong emotional close - Jeremy nearly cried describing his career frustrations. Wife fully supportive."
+    },
+    {
+      "prospect_name": "Jeroen Hammega",
+      "date": "2025-10-26",
+      "outcome": "close",
+      "revenue": "$3500",
+      "buyer_archetype": "convenience_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "ServiceNow developer with extensive IT experience",
+        "Needs OpenShift/Kubernetes for immediate customer project",
+        "Already has home lab with 19 racks and servers",
+        "Company will pay via invoice",
+        "Practical, direct communication style",
+        "Agreed to enroll with minimal persuasion needed"
+      ],
+      "close_trigger": "Jeroen needed Kubernetes knowledge for an immediate work project with a deadline by end of year. Company paying. The hands-on approach matched his learning style perfectly. He agreed to $3500 and requested an invoice.",
+      "loss_reason": null,
+      "key_turning_point": "When Austin showed the home lab course focusing on K3S and Flux - this matched exactly what Jeroen needed for his air-gapped OpenShift customer environment",
+      "discovery_questions_used": [
+        "How does this work?",
+        "What's your current familiarity with Kubernetes?",
+        "What's the timeline?"
+      ],
+      "objections_raised": [
+        "Needs invoice for company payment"
+      ],
+      "objections_handled_well": [
+        "Accommodated company invoice request",
+        "Focused presentation on hands-on lab matching Jeroen's learning style",
+        "Started onboarding immediately on the call"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Clean convenience buyer close. Company paying, clear need, immediate timeline. Jeroen already had extensive home lab infrastructure. Onboarded on the call itself. No resistance."
+    },
+    {
+      "prospect_name": "Joshua Danielson",
+      "date": "2026-01-08",
+      "outcome": "close",
+      "revenue": "$4000",
+      "buyer_archetype": "pain_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Recently laid off in November from logistics account manager role",
+        "Father (Roy) is supporting the investment",
+        "Complete green horn with no DevOps knowledge",
+        "Stuck in same position for 5 years with no growth",
+        "Family financial stability is primary motivator",
+        "Describes feeling lost without purpose",
+        "Prior college attempt in computer systems unfinished"
+      ],
+      "close_trigger": "Roy (father) committed to the $4000 paid-in-full investment. Joshua's complete lack of direction combined with family financial pressure created urgency. Father's involvement provided both financial backing and emotional support for the decision.",
+      "loss_reason": null,
+      "key_turning_point": "When Roy Danielson said he believed the program offered a lucrative opportunity for a career that scales, contrasting it with Joshua's prior dead-end position - parental validation sealed the deal",
+      "discovery_questions_used": [
+        "Walk me through why you decided to book the call",
+        "What's your technical baseline?",
+        "What role are you aiming for?",
+        "Are you ready to start?"
+      ],
+      "objections_raised": [
+        "Complete beginner - feeling overwhelmed by content",
+        "No prior DevOps knowledge"
+      ],
+      "objections_handled_well": [
+        "Emphasized 6-12 month realistic timeline for beginners",
+        "Reassured Roy about community support for green members",
+        "Immediately connected Joshua with mentor Sammy for VIP treatment",
+        "Started onboarding on the call"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Known close from playbook ($12K day, Jan 2026). Father Roy was the financial backer and key decision influencer. Joshua is absolute beginner - never done DevOps. Full onboarding completed on the call. Longest transcript (77K chars)."
+    },
+    {
+      "prospect_name": "Nixon I",
+      "date": "2025-12-29",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "crisis_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Software engineer laid off, unemployed for 1.5 years",
+        "Sent over 100 applications with only 3-4 interviews",
+        "Freelancing and startup both ended",
+        "Cannot afford $3500 upfront - needs payment plan",
+        "Buy-now-pay-later solution proposed (~$200-250/month over 24 months)"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Financial constraints. Rated system 9/10 but cannot pay. Buy-now-pay-later via wop.com proposed. Follow-up call scheduled for next day.",
+      "key_turning_point": "When Austin introduced the wop.com buy-now-pay-later solution that could bring payments to $200-250/month over 24 months",
+      "discovery_questions_used": [
+        "Are you living the dream or working on it?",
+        "What motivated you to book this call?",
+        "How long have you been looking?",
+        "What's your end goal for 6-12 months?",
+        "What's preventing you from doing this on your own?"
+      ],
+      "objections_raised": [
+        "Cannot afford $3500 upfront",
+        "Unemployment for 1.5 years depleted savings",
+        "Needs custom payment arrangement"
+      ],
+      "objections_handled_well": [
+        "Introduced buy-now-pay-later through wop.com",
+        "Positioned solo learning vs program ROI effectively",
+        "Holiday discount from $4000 to $3500"
+      ],
+      "objections_mishandled": [
+        "Could not close same day despite high interest"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Strong crisis buyer with 1.5 years unemployment. 9/10 rating but genuine financial barrier. Targeting $200K+ DevOps salary. Software engineering background. Follow-up scheduled next day for payment logistics."
+    },
+    {
+      "prospect_name": "Matus Demko",
+      "date": "2025-12-01",
+      "outcome": "close",
+      "revenue": "$3500",
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Employed as solution architect in banking with AWS cert",
+        "6 years IT experience including junior DevOps at Accenture",
+        "Wants autonomy and fully remote senior DevOps role",
+        "Hobbies include DJing and cars - wants freedom for these",
+        "Motivated by Misha's video about autonomy",
+        "Not in financial distress"
+      ],
+      "close_trigger": "Matus agreed to 4-payment split with $50 down payment to lock spot. The autonomy/freedom messaging aligned perfectly with his desires. Follow-up on the 15th to finalize full payment plan.",
+      "loss_reason": null,
+      "key_turning_point": "When Austin connected the program to Misha's autonomy message that had originally inspired Matus - 'autonomy is a must have' resonated deeply",
+      "discovery_questions_used": [
+        "What motivated you to book this call?",
+        "What's your end goal for 6-12 months?",
+        "What's your biggest blocker?",
+        "On a scale of 1-10 how does this roadmap match?"
+      ],
+      "objections_raised": [
+        "Gets paid monthly - needs installment plan",
+        "Multiple interests competing for time (DJing, cars)"
+      ],
+      "objections_handled_well": [
+        "Offered 4-month payment split",
+        "Secured commitment with minimal $50 deposit",
+        "Connected Focus OS to managing multiple interests"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Closed with $50 deposit and 4-payment plan. Matus rated program 8.5/10. Autonomy/freedom was the key emotional driver. Wants American-level salary from Slovakia. Follow-up scheduled for 15th."
+    },
+    {
+      "prospect_name": "Craheem Connor",
+      "date": "2025-10-27",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "crisis_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Already a CubeCraft member asking for reduced price",
+        "Partner pregnant - financial stress",
+        "Rent about to double",
+        "Needs job with insurance benefits by January/February",
+        "Dropped a college class - no longer full-time student",
+        "Considering returning to blue-collar work temporarily"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Existing member facing financial crisis from partner's pregnancy. Cannot afford current program. Price reduction not feasible.",
+      "key_turning_point": "When Austin stated that dropping the price is not feasible - Craheem's only path was to pause or find temporary work",
+      "discovery_questions_used": [
+        "What's the priorities changed exactly?",
+        "What's the timeline now?"
+      ],
+      "objections_raised": [
+        "Needs reduced pricing",
+        "Partner pregnant - doubled expenses",
+        "Insurance benefits needed urgently"
+      ],
+      "objections_handled_well": [
+        "Suggested Amazon for tuition assistance and benefits",
+        "Encouraged leveraging CubeCraft community in Seattle area",
+        "Offered pause option with only owing difference"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Pain"],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Not a sales call - retention/support call for existing member. Partner's pregnancy changed financial situation drastically. Unique entry in dataset as it shows retention challenge, not acquisition."
+    },
+    {
+      "prospect_name": "Michael Taylor (Taharka Taylor)",
+      "date": "2025-10-10",
+      "outcome": "loss",
+      "revenue": null,
+      "buyer_archetype": "pain_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Was laid off from front-end developer role",
+        "Pigeonholed in QA - wants to escape",
+        "Boot camp graduate struggling to advance",
+        "Six-figure student loan debt with $1700/month payments",
+        "Limited disposable income"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Cannot afford $3500 due to massive student loan debt ($100K+, $1700/month payments). Austin correctly identified this was not the right time.",
+      "key_turning_point": "When Taharka revealed six-figure student loan debt with $1700 monthly payments - Austin recognized the financial impossibility and gracefully exited",
+      "discovery_questions_used": [
+        "Walk me through why you decided to book the call",
+        "What's your biggest challenge right now?",
+        "Scale of 1-10 Linux, Docker, Kubernetes?",
+        "How much time can you commit?"
+      ],
+      "objections_raised": [
+        "Six-figure student loan debt",
+        "$1700/month loan payments",
+        "Cannot afford $3500 program"
+      ],
+      "objections_handled_well": [
+        "Austin gracefully acknowledged this wasn't the right time",
+        "Offered to reconnect when financial situation improves",
+        "Did not pressure someone in genuine financial hardship"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Loss due to genuine financial impossibility. Good ethical handling by Austin - recognized the barrier was real and did not push. Taharka was genuinely interested but student debt made it impossible."
+    },
+    {
+      "prospect_name": "Oluwakemi Adeniyi (Kemi)",
+      "date": "2025-11-10",
+      "outcome": "loss",
+      "revenue": null,
+      "buyer_archetype": "unclear",
+      "archetype_confidence": "medium",
+      "archetype_signals": [
+        "16 years banking operations experience",
+        "Master's in financial technology",
+        "Looking for tech-enabled finance leadership role",
+        "Interested in F-ops analyst combining finance and cloud",
+        "Goal was business process automation, not DevOps"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Austin correctly identified the prospect's goals (business process automation in finance) did not align with CubeCraft's DevOps training. Not a product fit.",
+      "key_turning_point": "When Austin explained the difference between DevOps (infrastructure management) and business process automation (Kemi's actual need) - both acknowledged the misalignment",
+      "discovery_questions_used": [
+        "What are your career goals?",
+        "What role are you targeting?",
+        "Would you be open to becoming a DevOps engineer?"
+      ],
+      "objections_raised": [],
+      "objections_handled_well": [
+        "Honestly assessed and communicated poor fit",
+        "Suggested alternative tools (make.com, Microsoft ecosystem)",
+        "Directed to free community for educational content"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals"],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Not a loss in traditional sense - proper disqualification. Kemi wanted finance+tech, not DevOps. Austin handled this professionally by redirecting rather than force-fitting. Good example of ethical sales qualification."
+    },
+    {
+      "prospect_name": "Oluwasegun Haziz (Olu)",
+      "date": "2026-01-05",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Currently employed as backend data engineer and lead at startup",
+        "Earning 55K GBP, targeting 85-100K+ GBP",
+        "Over 10 interviews in 3 months but cannot convert to offers",
+        "Not in financial distress - employed and stable",
+        "Wants big tech position, preferably US market"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Needs to consult spouse before committing to 3544 GBP investment. Rated fit at 8/10. Planning to discuss with wife tomorrow.",
+      "key_turning_point": "When Austin identified that Olu's problem was interview conversion not skills - and Interview OS was positioned as the direct solution",
+      "discovery_questions_used": [
+        "What's your career goal?",
+        "What's preventing you from landing big tech?",
+        "How many interviews have you had recently?",
+        "What's your timeline?"
+      ],
+      "objections_raised": [
+        "Needs to consult spouse on financial commitment",
+        "3544 GBP is significant investment"
+      ],
+      "objections_handled_well": [
+        "Focused pitch on Interview OS for conversion problem",
+        "Positioned Home Lab and Job Magnet as bonus systems",
+        "10 hours/week realistic time estimate"
+      ],
+      "objections_mishandled": [
+        "No deposit or micro-commitment secured"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "UK-based prospect. Strong technical skills but failing at interview conversion. 10 interviews in 3 months with no offers. Interview OS positioning was smart. Spouse approval needed."
+    },
+    {
+      "prospect_name": "Patryk Anzorge",
+      "date": "2025-10-28",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Currently employed as DevOps professional for 10 months",
+        "Good salary already - income not main priority",
+        "Wants to deeply master DevOps and become pro engineer",
+        "FOMO about others progressing while he feels stagnant",
+        "Self-taught, already set up home lab"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Needs couple days to consider financial aspect. $3500 is significant in Poland (quarter of average monthly income). Rated program 9/10.",
+      "key_turning_point": "When Patryk noted the cost equals a quarter of average Polish monthly income - geographic pricing mismatch became the primary barrier",
+      "discovery_questions_used": [
+        "Why did you decide to book the call?",
+        "What's not going the way you want?",
+        "What's your goal for 6-12 months?",
+        "What's preventing you from doing this alone?"
+      ],
+      "objections_raised": [
+        "$3500 is very expensive relative to Polish income",
+        "Needs a couple days to think"
+      ],
+      "objections_handled_well": [
+        "Offered 2-payment split of $1750 each",
+        "Emphasized ROI for DevOps roles",
+        "Let prospect email when ready rather than forcing timeline"
+      ],
+      "objections_mishandled": [
+        "No smaller deposit option offered to lock commitment"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "medium (30-50min)",
+      "notes": "Poland-based prospect. $3500 USD has very different purchasing power in Poland. 9/10 program rating but price is the real barrier. Already has home lab and is self-motivated."
+    },
+    {
+      "prospect_name": "Piotr Minasz",
+      "date": "2025-11-06",
+      "outcome": "loss",
+      "revenue": null,
+      "buyer_archetype": "crisis_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Works for government-owned institution earning ~$20K/year",
+        "Recently spent money on Raspberry Pi 5s for home lab",
+        "Tight cash flow - cannot afford even $300 deposit",
+        "School commitments competing with program",
+        "University exams mid-January"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Cannot afford even the minimum $300 deposit. Multiple competing commitments (school, university exams, current job). Both agreed to postpone until December/January.",
+      "key_turning_point": "When Piotr could not commit to even the minimum $300 deposit due to tight cash flow from Raspberry Pi purchases - Austin recognized he was spread too thin",
+      "discovery_questions_used": [
+        "Is the obstacle purely financial?",
+        "If we come to a payment plan would you move forward today?",
+        "What's your number one goal right now?"
+      ],
+      "objections_raised": [
+        "Cannot afford $300 deposit",
+        "School commitments and university exams",
+        "Just spent money on home lab hardware",
+        "Wants to start mid-January after Christmas"
+      ],
+      "objections_handled_well": [
+        "Austin recognized prospect was too spread thin and agreed to postpone",
+        "Offered minimum $300 deposit to lock price",
+        "Did not pressure financially constrained prospect"
+      ],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Open", "Pain", "Goals", "Blocker", "Close"],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Follow-up call from previous conversation. Poland-based, very low income ($20K). Fully committed to process but genuinely cannot afford it now. Ethical decision to postpone. Former teacher who values solid foundations."
+    },
+    {
+      "prospect_name": "Derrick (Linux admin)",
+      "date": "2025-11-08",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "medium",
+      "archetype_signals": [
+        "Employed as Linux administrator, also tutors",
+        "Stable job but government contractor with furlough risk",
+        "Targeting $200K DevSecOps role",
+        "RHCSA certified, pursuing RHCE",
+        "Practical learner, values hands-on certifications"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Wants to research Misha's teaching style first. Follow-up tentatively scheduled for Monday at 6pm. Price deemed fair at $3500.",
+      "key_turning_point": "When Austin positioned Dev Containers as a replacement for Ansible - solving Derrick's specific frustration with the Ansible certification he was struggling with",
+      "discovery_questions_used": [
+        "What motivated you to book this call?",
+        "Scale of 1-10 Linux, containers, Kubernetes?",
+        "What's your definitive end goal for 6-12 months?",
+        "What's your biggest obstacle?"
+      ],
+      "objections_raised": [
+        "Needs to evaluate Misha's teaching style",
+        "Time constraints - 6am to 5pm work schedule",
+        "Financial commitment dependent on mentorship quality"
+      ],
+      "objections_handled_well": [
+        "Estimated 15 hours/week sufficient with plug-and-play systems",
+        "Shared $50K pay increase success story for fast ROI",
+        "Positioned Dev Containers as Ansible replacement"
+      ],
+      "objections_mishandled": [
+        "Let prospect leave to 'research' without stronger commitment"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Different Derrick from Derrick Gill. Linux admin from Boston/Connecticut. Government contractor with furlough anxiety. Practical learner who values Red Hat style hands-on exams. $200K DevSecOps target."
+    },
+    {
+      "prospect_name": "Ramesh",
+      "date": "2025-12-17",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "unclear",
+      "archetype_confidence": "low",
+      "archetype_signals": [
+        "Empty file - no transcript data available"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Transcript file is 0 bytes - no data available for analysis",
+      "key_turning_point": null,
+      "discovery_questions_used": [],
+      "objections_raised": [],
+      "objections_handled_well": [],
+      "objections_mishandled": [],
+      "script_phases_completed": [],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Empty .docx file (0 bytes). No transcript data available. Cannot determine any details about this call."
+    },
+    {
+      "prospect_name": "Ryan Stush",
+      "date": "2025-12-05",
+      "outcome": "close",
+      "revenue": "$3500",
+      "buyer_archetype": "pain_buyer",
+      "archetype_confidence": "medium",
+      "archetype_signals": [
+        "Already committed and paying - this is an onboarding call",
+        "Expressed being 'ready to start' with high enthusiasm",
+        "Said 'it's been a while since I was ready to get my fingers on a keyboard'",
+        "Prior call likely established pain context"
+      ],
+      "close_trigger": "Close happened on a prior call. This transcript captures the onboarding session where Ryan set up his account, paid the $35 annual membership, and received initial instructions.",
+      "loss_reason": null,
+      "key_turning_point": "N/A - this was a post-close onboarding call",
+      "discovery_questions_used": [],
+      "objections_raised": [],
+      "objections_handled_well": [],
+      "objections_mishandled": [],
+      "script_phases_completed": ["Close"],
+      "call_duration_estimate": "short (<30min)",
+      "notes": "Known close from playbook (pain buyer, Dec 2025). This transcript is the onboarding call, not the sales call. Ryan was walked through community pin post, DevOps roadmap, Focus OS, and Job Magnet OS. Laptop arriving end of month. 4 hours/week available."
+    },
+    {
+      "prospect_name": "Scott Medway",
+      "date": "2025-12-12",
+      "outcome": "close",
+      "revenue": "$3500",
+      "buyer_archetype": "vision_buyer",
+      "archetype_confidence": "high",
+      "archetype_signals": [
+        "Currently employed as technical project manager in cloud-native K8s",
+        "Wants to upskill to SRE level for current role",
+        "Long-term goal of freelancing in containerization/K8s",
+        "Ex-Forces background - values discipline and structure",
+        "Financial independence and flexibility are motivators",
+        "Not in distress - stable role, 3 months in"
+      ],
+      "close_trigger": "Scott rated fit at 9/10 and wanted to start immediately. Needed 24 hours to discuss payment plan with wife. Custom plan proposed: larger upfront (~1122 GBP) then 5 smaller monthly payments (~300 GBP). Follow-up scheduled next day.",
+      "loss_reason": null,
+      "key_turning_point": "When Austin connected the freelancing component (Job Magnet OS based on Misha's own freelancing method) to Scott's long-term consulting goal - this made the program uniquely valuable beyond just technical training",
+      "discovery_questions_used": [
+        "Are you living the dream or working on it?",
+        "What motivated you to book the call?",
+        "What happens if your skill level stays the same in a year?",
+        "What's your end goal for 3-12 months?",
+        "What's the main obstacle to doing this on your own?"
+      ],
+      "objections_raised": [
+        "Upfront lump sum difficult",
+        "House renovation expenses",
+        "Needs spouse approval",
+        "Ideally wants 6-month payment plan"
+      ],
+      "objections_handled_well": [
+        "Created custom payment plan structure",
+        "Positioned ROI against SRE salary gains",
+        "Connected freelancing OS to long-term autonomy goal"
+      ],
+      "objections_mishandled": [
+        "Buy-now-pay-later not available in UK, limiting options"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "NOW Tie-Down", "Pre-Pitch", "Pitch", "Temp Check", "Close"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Known close from playbook (vision buyer, Dec 2025). UK-based. Longest Gemini summary (74K chars). Ex-Forces. Custom payment plan needed. Freelancing goal differentiated from typical job-seeking prospects. 9/10 fit rating."
+    },
+    {
+      "prospect_name": "Vuko Vlahovic",
+      "date": "2026-01-01",
+      "outcome": "unknown",
+      "revenue": null,
+      "buyer_archetype": "pain_buyer",
+      "archetype_confidence": "medium",
+      "archetype_signals": [
+        "Career hiatus since 2019 due to 'major incident'",
+        "Living in South Korea with Korean spouse and 3 children",
+        "6-7 month full-time runway to upskill",
+        "All technical skills self-rated at 1/10",
+        "Background in Mechatronics Engineering and C++",
+        "Former senior quality engineering manager at Siemens"
+      ],
+      "close_trigger": null,
+      "loss_reason": "Needs to discuss with spouse. Follow-up call scheduled for next day at 6am (his time) to include wife.",
+      "key_turning_point": "When Austin explained the 2-to-20 week timeline for landing a position and connected it to Vuko's full-time availability - this made the goal feel achievable despite starting from zero",
+      "discovery_questions_used": [
+        "What motivated you to book this call?",
+        "Scale of 1-10 Linux, containers, Kubernetes?",
+        "What's your 6-month goal?",
+        "Does your wife support this?"
+      ],
+      "objections_raised": [
+        "Needs spouse involvement in decision",
+        "Starting from absolute zero in DevOps",
+        "Overwhelmed by complexity of learning path"
+      ],
+      "objections_handled_well": [
+        "Positioned program as the clear roadmap he's missing",
+        "HomeLab OS resonated strongly",
+        "Adjusted follow-up time to include wife"
+      ],
+      "objections_mishandled": [
+        "Investment amount not discussed in this call"
+      ],
+      "script_phases_completed": ["Open", "Set Agenda", "Why Here", "Pain", "Goals", "Blocker", "Pre-Pitch", "Pitch", "Temp Check"],
+      "call_duration_estimate": "long (>50min)",
+      "notes": "Unique prospect - lives in South Korea, Australian-born, ex-Siemens. Career gap since 2019. Starting from zero but has engineering background and full-time availability. Wife's involvement critical to decision. Follow-up next day."
+    }
+  ]
+}

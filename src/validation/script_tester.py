@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import time
 from datetime import datetime, timedelta
@@ -6,11 +7,14 @@ from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 
 from openai import OpenAI
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from validation.db import ValidationDB
 from realtime.models import ConversationState
+from realtime.prompts import load_script, get_script_guidance_prompt
 
 # Configuration
-SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "../../knowledge_base/kubecraft_script.md")
 DEFAULT_MODEL = "phi-3.5-mini"
 DEFAULT_BASE_URL = "http://localhost:8081/v1"
 
@@ -27,15 +31,7 @@ class ScriptTester:
         self.db = ValidationDB(db_path)
         self.client = OpenAI(base_url=base_url, api_key="dummy")
         self.model = model
-        self.script_content = self._load_script()
-        
-    def _load_script(self) -> str:
-        """Load the sales script from the knowledge base."""
-        try:
-            with open(SCRIPT_PATH, "r") as f:
-                return f.read()
-        except FileNotFoundError:
-            return "Error: Script file not found."
+        self.script_content = load_script()
 
     def _construct_system_prompt(self) -> str:
         """Create the system prompt with the script injected."""
@@ -204,25 +200,9 @@ class ScriptTester:
         """
         Minimal test mode: Script + Simple Instructions only.
         No complex logic, just script matching.
+        Uses the same prompt as production (from prompts.py).
         """
-        system_prompt = f"""You are a Sales Assistant.
-        
-        SALES SCRIPT:
-        {self.script_content}
-        
-        INSTRUCTIONS:
-        1. Read the transcript snippet.
-        2. Determine where we are in the script.
-        3. Identify key information mentioned by the prospect.
-        4. Suggest the next response based strictly on the script.
-        
-        OUTPUT FORMAT (JSON ONLY):
-        {{
-            "script_location": "Section Name",
-            "key_points": ["point 1", "point 2"],
-            "suggestion": "Verbatim response from script"
-        }}
-        """
+        system_prompt = get_script_guidance_prompt(self.script_content)
         
         try:
             response_str = self._call_llm(text, system_prompt)

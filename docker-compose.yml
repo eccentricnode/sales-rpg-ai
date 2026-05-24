@@ -1,13 +1,27 @@
 services:
-  # The Transcription Engine
+  # WhisperLiveKit Transcription Engine (GPU) — only needed if TRANSCRIPTION_ENGINE=whisperlivekit
   whisper-live:
-    image: ghcr.io/collabora/whisperlive-cpu:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.whisper
     container_name: whisper-live
     ports:
       - "9090:9090"
-    command: python3 run_server.py --port 9090 --backend faster_whisper
-    # GPU configuration moved to docker-compose.gpu.yml
-    # By default, this runs on CPU
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - whisper-cache:/root/.cache
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9090/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   # Our Sales AI Web Application
   sales-ai-web:
@@ -20,20 +34,36 @@ services:
       - WHISPER_PORT=9090
       - HOST=0.0.0.0
       - PORT=8080
-      # Pass the API key from the host environment
+      # LLM Configuration (from .env)
+      - LLM_PROVIDER=${LLM_PROVIDER:-github}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_MODEL=${GITHUB_MODEL:-gpt-4o-mini}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      # Local AI Configuration
-      - LLM_PROVIDER=local
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL}
+      # Google Gemini
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+      # Local AI
       - LOCAL_AI_BASE_URL=http://local-ai:8080/v1
-      - LOCAL_AI_MODEL=phi-3.5-mini
-    depends_on:
-      - whisper-live
+      - LOCAL_AI_MODEL=${LOCAL_AI_MODEL:-qwen2.5-7b}
+      # Azure AI Inference
+      - AZURE_AI_API_KEY=${AZURE_AI_API_KEY:-}
+      - AZURE_AI_MODEL=${AZURE_AI_MODEL:-gpt-4o-mini}
+      - AZURE_AI_BASE_URL=${AZURE_AI_BASE_URL:-https://models.inference.ai.azure.com/v1}
+      # RAG pipeline
+      - USE_RAG=${USE_RAG:-true}
+      # Transcription engine
+      - TRANSCRIPTION_ENGINE=${TRANSCRIPTION_ENGINE:-vad}
+      - VAD_WHISPER_MODEL=${VAD_WHISPER_MODEL:-base}
+      - VAD_DEVICE=${VAD_DEVICE:-cpu}
+      - VAD_SILENCE_MS=${VAD_SILENCE_MS:-400}
     volumes:
       - ./src:/app/src  # Enable hot-reloading for development
+      - ./data:/app/data  # Pre-built RAG embeddings
 
-  # Local Inference Engine
+  # Local Inference Engine (GPU)
   local-ai:
-    image: localai/localai:v2.24.0-ffmpeg-core
+    image: localai/localai:v2.24.0-cublas-cuda12
     container_name: local-ai
     ports:
       - "8081:8080"
@@ -43,5 +73,13 @@ services:
     volumes:
       - ./models:/build/models:cached
     command: ["/usr/bin/local-ai"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
-
+volumes:
+  whisper-cache:

@@ -8,6 +8,7 @@ from .analysis_orchestrator import (
     StreamingAnalyzer,
 )
 from .models import ConversationState
+from .vad_transcriber import VadTranscriber
 
 __all__ = [
     "BufferConfig",
@@ -17,4 +18,5 @@ __all__ = [
     "AnalysisResult",
     "StreamingAnalyzer",
     "ConversationState",
+    "VadTranscriber",
 ]

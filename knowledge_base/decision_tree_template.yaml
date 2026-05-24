@@ -1,0 +1,939 @@
+##
+## UNIVERSAL HIGH-TICKET SALES CALL DECISION TREE — TEMPLATE
+##
+## SOURCES:
+##   - Hardly Selling framework (Sean) — universal principles
+##   - KubeCraft 132-call analysis (55 closes, empirical validation)
+##
+## STRUCTURE:
+##   Part 1: Universal Principles (never change — apply to any offer)
+##   Part 2: Customizable Call Sequence (swap out {{PLACEHOLDER}} fields)
+##   Part 3: Objection Handler Bank (universal scripts)
+##   Part 4: Follow-Up Protocol (universal)
+##
+## HOW TO USE:
+##   1. Read Part 1 — internalize these, they don't change
+##   2. Copy Part 2 and customize all {{PLACEHOLDER}} fields
+##   3. Use Part 3 verbatim — objections don't change across offers
+##   4. Apply Part 4 when they don't close same-day
+##
+## PLACEHOLDERS TO REPLACE:
+##   {{OFFER_NAME}}       — Your program/product name
+##   {{OFFER_PRICE}}      — Investment amount (e.g., "$3,500")
+##   {{DOMAIN}}           — The field being sold into (e.g., "DevOps", "copywriting")
+##   {{OUTCOME}}          — What the buyer achieves (e.g., "a $120K DevOps job")
+##   {{OUTCOME_METRIC}}   — The measurable result (e.g., "salary", "monthly revenue")
+##   {{TIMELINE}}         — Realistic time to outcome (e.g., "6-12 months")
+##   {{OFFER_COMPONENTS}} — Your offer's 4-6 core deliverables (list)
+##   {{ORIGIN_STORY}}     — Best student success story (name, starting point, result, timeframe)
+##
+
+#---
+
+##
+## PART 1: UNIVERSAL PRINCIPLES
+## These never change. Internalize before every call.
+##
+
+universal_principles:
+
+  the_three_rules_of_sales:
+    - "Your only job is to help the prospect make the best decision for THEM"
+    - "What's best for the prospect is almost always outside their comfort zone"
+    - "Prospects will fight like hell to stay in their comfort zone"
+
+  three_phases_of_confidence:
+    phases:
+      - phase: "Discovery"
+        owner: "YOU"
+        goal: "YOU get confident that you can help them and that they need to change"
+      - phase: "Pitch"
+        owner: "THEM"
+        goal: "THEY get confident in the solution"
+      - phase: "Close"
+        owner: "Negotiation"
+        goal: "Exchange of words to reach a decision — not a price drop, a conclusion"
+    note: >
+      If you're not 100% confident from discovery, your pitch will be watered down,
+      your confidence will drop, and objection handling falls apart.
+
+  the_call_rhythm:
+    description: >
+      Energy levels move through the call like a wave. Never stay too low or too high
+      for too long. Bottom them out emotionally in problem — then bring them back up.
+    map:
+      open: "EVEN — conversational, not over-excited, not skeptical"
+      context: "EVEN — background gathering, coffee shop tone"
+      problem: "DOWN — slower, serious, trail off at end of questions"
+      solution: "UP — slightly faster, future pacing, energy rises"
+      consequence: "DOWN again — 'what if you don't get that solution?'"
+      pitch: "EVEN/slightly up — clear, direct, then SHUT UP"
+      close: "Adapt to their objection — speed up or slow down as needed"
+    warning: >
+      If you keep someone in low energy (problem) too long, they emotionally shut off.
+      If you stay high (excitement) too long, they stop trusting you.
+
+  problem_is_the_basis:
+    quote: "The problem is the basis of the sale. No good problem = no sale."
+    implication: >
+      80% of your calls are won in discovery. If you rush discovery, you throw a Hail Mary
+      at the close. Good discovery = ball at the 1-yard line. Just punch it through.
+    buy_on_emotion: >
+      Levels 0-2 of problem development are LOGICAL. Levels 3-4 are EMOTIONAL.
+      People buy on emotion, not logic. Go to level 4 whenever possible.
+
+  fact_check_objections:
+    rule: "Not all objections should be handled. Some are valid and should be honored."
+    process:
+      - "Get the objection"
+      - "Fact-check it — is it real or a smokescreen?"
+      - "If valid: honor it (don't force the sale)"
+      - "If smokescreen: handle it with the appropriate technique"
+    fact_check_phrase: >
+      "Just be completely honest with me. Do you truly need to [objection], or are you
+      nervous and pulling the [objection] card? I'm not mad — I just need to know the
+      truth so I can help you make the right decision."
+
+  suggest_vs_commit:
+    rule: >
+      If the client is uncertain, SUGGEST — do not commit to their answer for them.
+      Whatever THEY say is the truth. Whatever YOU say is a lie (to them, at this point).
+    wrong: "You're here because you want to make more money, right?"
+    right: >
+      "Based on the conversations I've had at this stage, it might be [X]...
+      does that resonate, or am I off base?"
+    note: >
+      Suggesting tests without committing. It invites the client to think for themselves.
+      Committing to an assumption leads you down the wrong path with confidence.
+
+  lean_into_the_negative:
+    rule: >
+      Don't avoid the fear — address it directly. If you sidestep their concern about
+      money, failure, or trust, every answer they give will be filtered through that fear.
+    example:
+      wrong: "Don't worry about that — our students do great!"
+      right: "It sounds like you're worried this might not work. Let's talk about that."
+    note: >
+      Call out the elephant in the room. Address it. Then you can move on.
+      Unaddressed fears kill more deals than direct objections.
+
+  do_not_lead_questions:
+    rule: >
+      Don't ask biased questions that confirm what you already believe.
+      You're collecting evidence for YOUR narrative — stop.
+    three_steps_for_bad_answers:
+      step_1: "Question alone — ask again simply"
+      step_2: "Question with context — explain why you're asking"
+      step_3: "Challenge — binary choice or analogy to force clarity"
+    example:
+      bad_answer: "I don't know why I'm here, just looking for information"
+      step_1: "What kind of information specifically?"
+      step_2: "I have a lot of information I can share — what would actually help you move forward?"
+      step_3: "Are you looking for a reason to do this, or a reason NOT to do this?"
+
+  meet_client_where_they_are:
+    rule: "Don't judge prospects by your standards. Meet them where they are."
+    examples:
+      - "Their conviction level is way lower than yours — they haven't done this 100 times"
+      - "If they don't trust the program yet, that's valid — don't argue, ask questions"
+      - "If they want to think about it, that's real to them — fact-check it, don't dismiss it"
+
+  ask_more_than_you_tell:
+    quote: "Ask more than you tell. Serve more than you sell."
+    note: >
+      If you ask with the intention to serve, the client will sell themselves.
+      The less you talk in discovery, the better. The more they talk, the closer they are.
+
+#---
+
+##
+## PART 2: CUSTOMIZABLE CALL SEQUENCE
+## 11 phases. Replace {{PLACEHOLDER}} fields with your offer's specifics.
+##
+
+call_sequence:
+
+  pre_call_ritual:
+    name: "Pre-Call Beliefs"
+    timing: "Before you get on — not on the call itself"
+    four_beliefs:
+      - "There is a positive transformation opportunity for this prospect"
+      - "I'm not just walking through a script — I'm giving them an opportunity to solve their problems"
+      - "If I can't help them, I'll point them in a better direction"
+      - "I'm here to do what's best for them — even if that means not working with me"
+    note: >
+      Sales resistance from the prospect comes from them sensing YOU don't believe this.
+      If you're attached to the outcome, they feel it. Detach from the result. Focus on service.
+
+
+  phase_1_open:
+    name: "Open"
+    timing: "0:00 – 0:02"
+    goal: "Build rapport. Set the frame. Decrease sales resistance."
+    frame_setting_script: >
+      "I'm going to ask some questions — find out where you're at, what's working,
+      what's not, what's broken. From there I can let you know if I think we can help.
+      But here's the thing — if I feel like we can't help, I'll tell you and point you
+      in a better direction. Sound good?"
+    why_this_works: >
+      Removes sales resistance. You're not just here to sell. You're here to evaluate fit.
+      This keeps them honest throughout discovery.
+    note: "Rapport < 2 minutes. Diminishing returns after that. Get to frame setting fast."
+
+
+  phase_2_context:
+    name: "Context"
+    timing: "0:02 – 0:08"
+    goal: "Understand their background and situation. Get enough context to ask good questions."
+    energy: "EVEN — conversational, coffee shop tone"
+    anchor_question: "What's the main thing that motivated you to book this call today?"
+    secondary_questions:
+      - "Can you walk me through where you're at right now?"
+      - "Give me some context — what specifically brought you here?"
+    what_you_are_gathering:
+      - "Their current situation (role, what they've been doing)"
+      - "What they've tried that hasn't worked"
+      - "Initial framing: pain vs. vision vs. convenience vs. crisis"
+    early_archetype_flags:
+      pain_signals:
+        - "Laid off, unemployed, struggling for months"
+        - "Financial pressure, family concern"
+        - "Applied/tried/failed repeatedly"
+        - "Uses words like 'stuck', 'scared', 'can't keep going'"
+      vision_signals:
+        - "Currently employed, stable"
+        - "Wants growth, leveling up"
+        - "Refers to 2-5 year goals"
+        - "Calm, curious, professional tone"
+      crisis_signals:
+        - "Pain language PLUS financial hesitation immediately"
+        - "Asks about payment plans in first 3 minutes"
+      tire_kicker_signals:
+        - "Vague answers"
+        - "Just looking / researching"
+        - "No urgency language"
+
+
+  phase_3_problem_development:
+    name: "Problem Development"
+    timing: "0:08 – 0:20"
+    goal: "Go 4 levels deep. Get to emotional truth. Discovery is where 80% of calls are won."
+    energy: "DOWN — slower cadence, more serious, trail off at end of questions"
+    warning: "Don't stay here too long or they shut off emotionally. Bottom them out, then bring them up."
+
+    four_stages:
+      level_0:
+        name: "Surface"
+        description: "What they say first — broad or generic"
+        example: "'I'm not getting enough results'"
+        response: "Don't stop here. This is just the label."
+
+      level_1:
+        name: "Probe and Clarify"
+        description: "Make the vague specific. Get numbers."
+        phrases:
+          - "When you say [X], what does that specifically mean?"
+          - "How many [results]? Give me the actual number."
+          - "Are you losing money or profitable but wanting more?"
+        example: "500 job applications, 3 interviews, 0 offers."
+
+      level_2:
+        name: "Duration"
+        description: "How long has this been going on?"
+        why_it_matters: >
+          A week-old problem might fix itself. A 6-month problem is real.
+          Duration builds the case for urgency without you manufacturing it.
+        phrases:
+          - "How long has this been going on?"
+          - "And before that — when did this start being a real issue?"
+
+      level_3:
+        name: "Impact and Emotion"
+        description: "What impact is this having? Surface the emotional truth."
+        trigger_words: "frustrated, tough, hard, pissed off, stressed, scared — DEVELOP THESE"
+        phrases:
+          - "Is that having any impact on you or [their situation]?"
+          - "How so? after they mention impact"
+          - "How does that feel day to day?"
+          - "What does that do to you emotionally?"
+        note: >
+          When you hear emotional language — do NOT move on. Go deeper.
+          This is the real reason they're on the call.
+
+      level_4:
+        name: "Ramifications"
+        description: "What happens if nothing changes?"
+        phrases:
+          - "With this going on for [duration], what are the possible ramifications if it keeps going for the foreseeable future?"
+          - "Is that a real possibility for you?"
+          - "What does that look like for [family/business] if nothing changes in 6 months?"
+          - "If you're still in this exact spot in 3 years, how do you feel about yourself?"
+        note: >
+          Level 4 creates internal tension. They surface the stakes — you don't dictate them.
+          Their words become your ammunition at the close.
+
+    technique_recap_with_pain:
+      description: "Take their situation and amplify it through word choice and analogy"
+      example:
+        they_say: "Lead quality is inconsistent, sometimes great, sometimes waste. About a year."
+        weak: "So you want more consistent leads."
+        strong: "That must be frustrating — the roller coaster of not knowing if the lead you're talking to is going to convert. And having no idea why or how to fix it must be just as bad."
+      why: "Widens the gap. Creates clarity about how serious the problem is."
+
+    archetype_specific_questions:
+      pain_buyer:
+        questions:
+          - "What happens if nothing changes in the next 6 months?"
+          - "How does your [spouse/family] feel about where things are at?"
+          - "You've applied to [X] jobs — what does that do to you emotionally?"
+          - "If you're still in this exact spot in 3 years, how do you feel about yourself?"
+        avoid: "Long-range vision questions — they are in survival mode"
+      vision_buyer:
+        questions:
+          - "You're stable right now — what's making you actually want to take the risk of changing?"
+          - "How long have you been thinking about this?"
+          - "What does landing {{OUTCOME}} do for you and your family long-term?"
+          - "What would it mean to you personally to make this transition?"
+          - "Is there a reason for this shift? What's prompting it NOW?"
+        avoid: "Consequence stacking — they are not afraid of staying where they are"
+      crisis_buyer:
+        questions:
+          - "What does your financial situation look like right now — honestly?"
+          - "What do you have available to invest in something like this?"
+        note: "Qualify finances BEFORE going deep on pain. Ethical screen required."
+      tire_kicker:
+        questions:
+          - "On a scale of 1-10, how urgent is making a change right now?"
+          - "What specifically made you book a call today instead of just doing research?"
+        action_if_below_5: "DQ or BAMFAM. Do not proceed to pitch."
+
+
+  phase_4_baseline_assessment:
+    name: "Baseline Assessment"
+    timing: "0:20 – 0:25"
+    goal: "Understand their starting point. Reveals program fit and surfaces the gap."
+    customize: >
+      Replace with 2-3 questions that assess their current level in {{DOMAIN}}.
+      Use a 1-10 scale. Goal: understand where they are and surface the gap.
+    template_questions:
+      - "How would you rate your current [DOMAIN SKILL 1] on a scale of 1-10?"
+      - "What about [DOMAIN SKILL 2]?"
+      - "And [DOMAIN SKILL 3]?"
+    example_kubecraft:
+      - "How would you rate your Linux familiarity on a scale of 1 to 10?"
+      - "What about containers and Docker?"
+      - "And Kubernetes specifically?"
+    interpretation:
+      "1-3": "Complete beginner. Needs foundational path. Don't assume knowledge."
+      "4-6": "Intermediate. Standard entry. Most common in KubeCraft closes."
+      "7-9": "Advanced. May need certification/senior-track framing."
+    coaching_use:
+      low_scores: "That's exactly why structured mentorship beats self-study here."
+      high_scores: "Even strong practitioners get stuck without production-grade experience."
+
+
+  phase_5_solution_and_vision:
+    name: "Solution Vision"
+    timing: "0:25 – 0:30"
+    goal: "Bring them UP after problem. What does achieving {{OUTCOME}} look like?"
+    energy: "UP — future pacing, slightly faster, energy rises"
+    questions:
+      - "What is your end goal for the next 6 to 12 months?"
+      - "What does [achieving {{OUTCOME}}] do for you and your family?"
+      - "What {{OUTCOME_METRIC}} are you targeting when you get there?"
+      - "Say you did achieve that — who's the first person you call? What do you say?"
+    why: >
+      You bottomed them out emotionally in Phase 3. Now you lift them up to the vision.
+      This contrast (problem pain → solution excitement) is the emotional engine of the close.
+    listen_for:
+      - "Specific {{OUTCOME_METRIC}} target → write it down exactly, use in close"
+      - "Clear timeline → urgency signal"
+      - "Family mentioned → emotional stake"
+      - "Specific role or outcome named → use in pitch framing"
+
+
+  phase_6_consequence:
+    name: "Consequence of Inaction"
+    timing: "0:30 – 0:33"
+    goal: "Bring them back DOWN — what happens if they don't get the solution?"
+    energy: "DOWN again — remove the solution vision, explore staying in status quo"
+    phrases:
+      - "Based on everything you've shared — what does it look like if nothing changes over the next 12 months?"
+      - "With this going on for [their duration], and you feeling [their emotion], what are the ramifications if it keeps going?"
+      - "Is that a real possibility for you?"
+      - "On the other side of NOT making this decision is something equally simple but way more devastating. Can I tell you what I see happen?"
+    note: >
+      This is the cost-of-inaction moment. Don't skip it. It counterbalances the vision
+      and makes inaction feel as expensive as the program.
+
+
+  phase_7_blocker_surfacing:
+    name: "Blocker Surfacing"
+    timing: "0:33 – 0:36"
+    goal: "Surface objections BEFORE the pitch. Handle them here, not at the close."
+    questions:
+      - "What's holding you back from doing this on your own?"
+      - "What have you tried that hasn't worked?"
+      - "If you could wave a magic wand, what would the ideal solution look like?"
+    listen_for:
+      money_concern:
+        signal: "Mentions cost, savings, or financial concern"
+        action: "Lead with payment plan at close. Don't wait for price objection."
+      spouse_approval:
+        signal: "Mentions needing to check with partner"
+        action: >
+          Surface NOW: 'Is there any way to get your [partner] on a quick call right now?
+          3 minutes. I want them to have the full picture so they can support the decision.'
+          DO NOT leave this for close time — it will kill the deal.
+      self_doubt:
+        signal: "Questions whether they can actually do it"
+        action: "Specific success evidence: {{ORIGIN_STORY}}"
+      time_concern:
+        signal: "Says they don't have enough time"
+        action: "Quantify the commitment. Ask about their current week."
+
+
+  phase_8_responsibility:
+    name: "Responsibility"
+    timing: "0:36 – 0:38"
+    goal: "Get them to take ownership of why they can't do it alone."
+    why_it_matters: >
+      If they don't take responsibility for needing help, they'll resist the pitch
+      (feels like a sell, not a solution). This phase earns your right to present.
+    three_reasons_they_need_help:
+      - "Can't do it alone (lack skill/knowledge)"
+      - "Would take too long (want to get there faster)"
+      - "Want the safety net of a proven process"
+    questions:
+      - "What's the biggest thing stopping you from getting there on your own?"
+      - "Which of these applies: can't do it alone, would take too long, or want the safety net of a proven process?"
+      - "You're currently here — you've been wanting to get there. What's standing between you and that?"
+    note: >
+      Once they articulate why they need help in their own words, the pitch becomes
+      a service delivery, not a sale. Their answer = your pitch setup.
+
+
+  phase_9_now_tiedown:
+    name: "NOW Tie-Down"
+    timing: "0:38 – 0:40"
+    goal: "Commitment test before pitch. This is a gate — not a formality."
+    questions:
+      - "Is this a NOW thing for you? Are you willing and ready to work on this now?"
+      - "On a scale of 1-10, how ready are you to make a change if this is the right fit?"
+    scoring:
+      "8-10": "Proceed to pitch."
+      "5-7":  "'What would get you to a 9?' — resolve the remaining blocker first."
+      "1-4":  "DQ or BAMFAM. Do NOT pitch."
+    note: >
+      Why now tie-down purpose: alleviates "let me think about it" and "maybe in Q3."
+      If they're not willing to take action NOW, there's no point in giving them the answer.
+      Handle the 5 or 6 before you proceed — not after the price drop.
+
+
+  phase_10_acknowledge_gap_and_bridge:
+    name: "Acknowledge Gap / Pre-Pitch"
+    timing: "0:40 – 0:43"
+    goal: "Signal transition. Build bridge from their pain to your solution."
+    gap_acknowledge: >
+      "This is a great fit. We help people in exactly the situation you've described
+      all the time. I'll tell you right now — we're going to challenge you and hold you
+      accountable. I'm assuming you're open to that?"
+    pre_pitch: >
+      "Our specialty is helping people in exactly your situation achieve {{OUTCOME}}.
+      We do that through our {{OFFER_NAME}} system."
+    bridge_by_archetype:
+      pain_buyer: >
+        "You told me you've been [their situation] for [duration] and it's [their consequence].
+        That's not a [luck/willpower] problem — that's a [root cause] problem.
+        Let me show you what [people exactly like you] did to break through..."
+      vision_buyer: >
+        "You said you want to be [their outcome] within [their timeline].
+        The gap isn't [time/effort] — it's [the missing ingredient].
+        Let me show you what we built for that..."
+
+
+  phase_11_pitch:
+    name: "Pitch — {{OFFER_NAME}}"
+    timing: "0:43 – 0:53"
+    goal: "Present your pillars. Customize by archetype. Then SHUT UP."
+    rule: "Don't word vomit features. Present pillars, then let them ask. Share only what's relevant."
+    offer_components:
+      customize: >
+        Replace with your offer's 4-6 core deliverables.
+        Each should address a specific gap the prospect named in discovery.
+      template:
+        - "[Component 1] — [ties to their stated problem]"
+        - "[Component 2] — [ties to their stated problem]"
+        - "[Component 3] — [ties to their stated problem]"
+        - "[Component 4] — [ties to their stated problem]"
+        - "[Component 5] — [ties to their stated problem]"
+      example_kubecraft:
+        - "Live lab environment (hands-on production projects, not tutorials)"
+        - "Mentorship and coaching access (direct access to Austin)"
+        - "Community (peer learning and accountability)"
+        - "Structured curriculum (Linux to Kubernetes to CKA-ready)"
+        - "Capstone project (portfolio-grade, deployable)"
+    after_pillars: >
+      "We can go one of two ways from here — I can break down what our game plan
+      for you would be, or if you have questions you're dying to ask, we can hit those.
+      Where do you want to go from here?"
+    customize_by_archetype:
+      pain_buyer:
+        lead_with: "Speed and structure"
+        frame: >
+          "You can't [their failed approach] your way out of [their problem].
+          You can solve it with the right system. Here's what gets people from [starting point]
+          to {{OUTCOME}} in {{TIMELINE}}."
+      vision_buyer:
+        lead_with: "Destination and identity"
+        frame: >
+          "This is the infrastructure that gets you from where you are
+          to [their stated role and outcome]."
+      crisis_buyer:
+        lead_with: "Affordability and access"
+        frame: >
+          "Before we get into investment — let me show you what it delivers,
+          and then we'll find a way to make it work financially."
+      convenience_buyer:
+        lead_with: "Efficiency and clear deliverables"
+        frame: "Here's what's included and here's the track most people in your situation take."
+
+
+  phase_12_temp_check:
+    name: "Temperature Check"
+    timing: "0:53 – 0:55"
+    goal: "Gut check BEFORE price reveal. Pull out rationale before asking for money."
+    questions:
+      - "Scale of 1-10, how do you feel about what we've discussed?"
+      - "Do you feel like this would solve everything you need?"
+    what_to_watch_for:
+      lukewarm_answers:
+        - "It sounds good"
+        - "It makes sense"
+        - "I feel all right"
+        - "I'm interested"
+      action: "These are lukewarm — they're playing it safe. Push for a real number."
+    scoring:
+      "7-10": "Proceed to price reveal."
+      "5-6":  "'What's keeping you from a 9?' — surface the hidden objection first."
+      "<5":   "'Sounds like this might not be the right fit — what would need to be different?'"
+
+
+  phase_13_investment:
+    name: "Investment / Close"
+    timing: "0:55 – end"
+    goal: "Price reveal, payment options, then SILENCE."
+    investment_script: "For everything we talked about, the investment is {{OFFER_PRICE}}."
+    rule: "State it. Then SHUT UP. Their reaction tells you how close they are."
+    payment_sequence:
+      step_1: "State the investment clearly. No apology, no hedging."
+      step_2: "Present payment options (full / installments / BNPL if available)"
+      step_3: "SILENCE. Wait for them to respond first."
+    close_by_archetype:
+      pain_buyer:
+        technique: "Consequence stack with their own words"
+        script: >
+          "You said [their exact pain quote]. You said [their exact fear].
+          The question isn't whether you can afford {{OFFER_PRICE}} — it's whether you can
+          afford to wait another 3 months while [their stated consequence] keeps happening."
+        payment_approach: "Lead with installment plan. Offer deposit to get started."
+      vision_buyer:
+        technique: "Vision ROI"
+        script: >
+          "You said you want [their exact target] in [their timeline].
+          At {{OFFER_PRICE}}, if this gets you there [X] months faster than going alone —
+          what's that worth? The investment pays for itself in [X] weeks."
+        payment_approach: "Full price framing. Plans available but don't lead with them."
+      crisis_buyer:
+        technique: "Affordable path or ethical DQ"
+        script: >
+          "We have a few ways to make this work: [BNPL option], [deposit + payments].
+          Let me show you what's possible."
+        ethical_dq: >
+          "I don't want to put you in a harder spot. Let me point you toward [free resource]
+          and we can revisit when the timing's better."
+      convenience_buyer:
+        technique: "Remove friction"
+        script: "Here are your two options: [A] or [B]. Most people in your situation go with [A]."
+
+#---
+
+##
+## TIE-DOWN SYSTEM
+## Cross-stage. Use throughout discovery to pre-handle objections.
+##
+
+tie_down_system:
+  what_they_are: >
+    Micro-commitments from the prospect that counter their objections later.
+    Money changes everything — when the price drops, their problems, desires, and goals
+    can disappear. Tie-downs make the problem worth MORE than the price.
+
+  five_cs:
+    - "Certainty — in their current situation"
+    - "Clarity — on the problem and why it needs solving"
+    - "Conviction — that they need to change"
+    - "Confidence — to make the decision"
+    - "Commitment — to act now"
+
+  three_tie_down_types:
+    problem_tiedown:
+      steps:
+        - "Label the problem (what is it?)"
+        - "Explain why it's a problem (impact)"
+        - "Get numbers (facts verify fiction)"
+        - "Show the pattern (not isolated incident)"
+        - "Future pace (what if this continues?)"
+        - "Close: 'Are you prepared to settle for that?'"
+    solution_tiedown:
+      steps:
+        - "What have they tried?"
+        - "What results did they get?"
+        - "Why did those attempts fail? What was missing?"
+        - "What do they need moving forward?"
+    goal_tiedown:
+      steps:
+        - "What's the ultimate measure of success?"
+        - "Why would that be important?"
+        - "How would it affect them personally?"
+        - "Who's the first person they'd call?"
+        - "Whose responsibility is it to make that happen?"
+
+  key_phrases:
+    problem: "Is that something you'd be prepared to settle for?"
+    duration: "Have you ever seen a problem that got better with time?"
+    responsibility: "It might not be your fault, but it is your problem."
+    cost_of_inaction: >
+      "On the other side of making this decision is something equally simple but
+      far more devastating — NOT making it. Without that decision, we stay the same.
+      And quite often, things get worse."
+
+#---
+
+##
+## ARCHETYPE SYSTEM
+## From KubeCraft 132-call empirical analysis. Universal across high-ticket coaching/training.
+##
+
+archetypes:
+  pain_buyer:
+    profile: "In genuine distress. Came because they NEED to solve something now."
+    close_rate_empirical: "~49% (36/74 calls)"
+    detection_timing: "3-5 minutes in"
+    primary_lever: "Escape from pain"
+    key_insight: "Don't manufacture urgency — theirs is real. Lead with payment plan."
+
+  vision_buyer:
+    profile: "Employed, stable, ambitious. Came to grow, not because they're stuck."
+    close_rate_empirical: "~50% (17/34 calls)"
+    detection_timing: "5-12 minutes in (takes longer to reveal)"
+    primary_lever: "Identity / aspiration — sell the destination"
+    key_insight: "Longer discovery = higher close. Don't rush."
+
+  crisis_buyer:
+    profile: "Genuine distress AND limited funds. High urgency, low capacity."
+    close_rate_empirical: "~50% (2/4 calls — small sample)"
+    detection_timing: "Early — financial hesitation surfaces fast"
+    primary_lever: "Affordable path to relief"
+    key_insight: "Qualify finances BEFORE going deep on pain. Ethical DQ if can't afford."
+
+  convenience_buyer:
+    profile: "Knows what they want. Has the money. Wants efficiency."
+    primary_lever: "Clarity and confidence in delivery"
+    key_insight: "Skip pain excavation. Qualify, confirm fit, give clean options."
+
+  tire_kicker:
+    profile: "No real urgency. Comparing, researching, or just curious."
+    close_rate_empirical: "~0%"
+    primary_lever: "None this call"
+    key_insight: "DQ or BAMFAM by minute 8-10. Do not pitch."
+
+  unclear_archetype:
+    note: >
+      From KubeCraft data: 0% close rate on the 20 calls where archetype was unclear.
+      If you cannot detect archetype by minute 10, urgency is probably low. DQ or BAMFAM.
+
+#---
+
+##
+## PART 3: OBJECTION HANDLER BANK
+## Universal scripts. Don't change per offer. Memorize these.
+##
+
+objection_handlers:
+
+  think_about_it:
+    fact_check_first: >
+      "Do you really think you need to think about it, or could it be that based on
+      our conversation you already know what you want to do, but there's fear in making it?"
+    normalize: >
+      "Of course. I feel like we were both expecting you to say that, weren't we?
+      What do you think?"
+    car_analogy: >
+      "You've already thought about it. You came here looking for a solution.
+      It's like deciding to buy a car, then going to the garage. The main thing you
+      didn't know was the price — now you know. Has that made you want this less?"
+    time_pressure: >
+      "Time is always ticking. It has been ticking for the last [X months] and will
+      go on regardless of your choices. But didn't you come here today because you want
+      [their goal]? That's not getting any closer. In an ideal situation, what would you do?"
+    binary: "Are you thinking of a reason to do this, or a reason NOT to do this?"
+    direct: "Is there anything I can reasonably say or do to help you make the decision here today?"
+    reference_discovery: >
+      "I can't imagine it's an easy choice, but it seemed like an easy one when we
+      talked through your current situation. What's changed?"
+    use_tiedown: >
+      "You told me this was a NOW thing for you. What changed in the last 5 minutes?
+      Usually when people say 'think about it' there's something specific. What is it?"
+
+  spouse_partner:
+    fact_check: >
+      "Do you really need to run this by your [partner]?
+      Or is this a reaction to the investment? Be honest."
+    if_valid: "Honor it. Not worth a divorce. Offer 3-minute call with partner right now."
+    alignment_check: >
+      "If your partner was here right now, do you think they would feel the same
+      and want you to fix this?"
+    price_test: "If it was half the price, do you think you'd need to ask them?"
+    leadership_close: >
+      "You have the investment, you feel confident, and apart from your partner you'd be good.
+      If you're that certain, surely that's the decision your partner would make too?
+      Would it be unreasonable to just do this and tell them you've found the solution?"
+    follow_up_call: >
+      "Let's get them on a quick call right now. 3 minutes. I want them to have the
+      full picture so they can support whatever you decide."
+    avoid: "'Go talk to them and call me back' — this kills the close."
+
+  expensive_cant_afford:
+    challenge_the_comparison: >
+      "I thought you said you could get exactly what we do, same level of coaching,
+      same results, for cheaper. Is that correct? Because we don't do cheap and cheerful —
+      we know it doesn't work."
+    use_past_failures: >
+      "Didn't you say you've tried [previous approach] and it didn't get results?
+      How'd that investment work out?"
+    free_test: "Say it was free — do you feel this would be the solution for you?"
+    scale_test: "10 being absolutely yes, 1 being no — how close do you think we could get you to [goal]?"
+    remove_value: "That's no problem — which part of what I outlined would you like me to take away?"
+    payment_reality: >
+      "You'll have to write a check to get results. The question is whether you pay
+      with time and disappointment, or money and success."
+
+  want_to_research:
+    what_specifically: >
+      "What kind of research would get you to a place where you feel confident to make a decision?"
+    forever_research: >
+      "You could research forever. I've seen people spend years in research mode.
+      What specifically is missing where you feel stuck?"
+    binary_truth: >
+      "This comes down to 2 things: either you don't trust us, or you want to do it
+      but there's fear and research will help you find a reason not to."
+    gut_check: >
+      "At this point you already know what you want to do, don't you? Your gut is
+      saying yes and your head hasn't caught up. If you knew you couldn't fail, would you do it?"
+    looking_for_what: >
+      "In your research — are you looking for a reason to do this, or a reason NOT to?
+      Either way, you're going to be right. What's your gut telling you?"
+
+  happy_shopper:
+    name: "I want to talk to other companies first"
+    probe: >
+      "Besides speaking to other people — do you feel like what we do might be
+      a possible solution for you?"
+    find_what_they_want: "What specifically are you looking for?"
+    following_the_feeling: >
+      "We both have a feeling this could get you results. If you walked away now
+      without following that feeling, how would you feel in 6 months?"
+    window_shopping: >
+      "You could be window shopping for the next 6 months and still not walk in.
+      Or you could walk in and try us on — find the perfect fit."
+
+  guarantee:
+    the_flip: "There absolutely is a guarantee — it's based on how much you want to make."
+    what_they_need: "You don't need a guarantee — you need a plan to succeed. Would you agree?"
+    the_choice: >
+      "You have 2 choices: commit to yourself and do the work, or don't do anything
+      and watch others succeed. We're not a scapegoat for someone's lack of commitment."
+    honest_answer: >
+      "We can't guarantee [outcome] — no honest program can. What we can show you
+      is [{{ORIGIN_STORY}}]. The path works. The variable is the work you put in."
+
+  dont_know_you:
+    name: "The Photo Shop"
+    get_buy_in: "If you did know us and trust us — would what we do help you reach that target?"
+    first_time: >
+      "There's a first time for everything. At some point you didn't know your best friend.
+      Look how that turned out."
+    investment_vs_giving: >
+      "Are you giving me money, or are you making an investment in yourself
+      to get the coaching to get [result]?"
+
+  figure_it_out_myself:
+    name: "The Cart Before Horse"
+    driving_analogy: >
+      "Do you drive? How did you learn? You got an instructor — because you'd never driven before.
+      But you've also never earned [{{OUTCOME_METRIC}}] before. What makes [DOMAIN] different?"
+    time_cost: >
+      "How many hours a week are you spending figuring this out? [X hours] at [their rate]
+      is [$Y/month] — [$Z/year]. What would you do with an employee who cost that much with nothing to show?"
+    systems_vs_figuring_it_out: >
+      "Systems work. People fail. A system doesn't allow for random decisions — if it did,
+      every McDonald's would be different. You need a proven system, not improvisation."
+
+  afraid_to_move_forward:
+    normalize_failure: >
+      "How did you learn to walk? You failed many times before you succeeded.
+      You have to be willing to explore failure in order to succeed."
+    the_choice: >
+      "What are you more afraid of — taking this step, or the risk of [their Level 4 consequence]?"
+
+  deposit_close:
+    the_logic: >
+      "A refundable deposit is our process. If you trust us to help you [outcome],
+      but you won't put down a $500 refundable deposit — how does that make sense?"
+    bs_filter: >
+      "A refundable deposit is a BS filter. Anyone not willing to do it is not
+      actually all-in. The deposit exposes what's really holding them back."
+    zero_risk: "There's literally no risk. It's refundable. We legally cannot keep it if you say no."
+    give_them_what_they_want: >
+      "You want to think about it? I want you to have that opportunity. $500 refundable.
+      We'll talk next week. If after thinking about it you say no — we refund it, no questions."
+
+  cta_questions:
+    gut_check: "What is your gut telling you?"
+    identify_blocker: "What do you feel is the hardest thing about making this decision?"
+    remove_failure_fear: "If you knew you couldn't fail, would you do it?"
+    expose_bias: "Are you looking for a reason to do this, or a reason NOT to do this?"
+    future_pace: "If we did do this — what now becomes possible that wasn't before?"
+    downside_test: "What's the worst thing that could happen if we went ahead and did this?"
+    absurdity_close: "Would it be the most insane idea if we just went ahead and did this?"
+    direct_ask: "Is there anything I can reasonably say or do to help you make the decision here today?"
+
+#---
+
+##
+## PART 4: FOLLOW-UP PROTOCOL
+## When they don't close same-day. Universal.
+##
+
+follow_up_protocol:
+  core_principle: "Leadership, not permission. You lead the follow-up. You set the time."
+
+  wrong_approach:
+    - "'Is this okay for you?'"
+    - "'How long do you need?'"
+    - "'When would work for you?'"
+
+  earning_the_right:
+    script: >
+      "How do you want YOUR prospects to behave when you know you can take them to
+      the promised land — but they're just nervous? We only get the right to challenge
+      our prospects to do the best thing for them if we do that ourselves.
+      There's an opportunity here for you to earn that right. Do you want it?"
+
+  setting_the_call:
+    step_1_plant_seed: >
+      "I still want you to think about what I said — I have to be willing to do
+      the things that make me uncomfortable. I have to do what I know is right,
+      even when it's uncomfortable. Otherwise every one of your prospects is going
+      to respond the way you're responding to me right now."
+    step_2_set_time_dont_ask: >
+      "I'm going to allow you to sleep on it tonight. We'll meet tomorrow.
+      Does 12 PM work for you?" [NOT: 'When would work for you?']
+    step_3_lock_calendar: >
+      "I'm going to send you the invite right now — I need you to accept it.
+      Otherwise my admin is going to see an unaccepted event and try to fill my calendar."
+    step_4_homework: >
+      "Here's the other thing — this happens all the time. We get off the call and
+      you'll wake up thinking 'I wish I'd asked about X.' Write those questions down.
+      We'll talk about them tomorrow."
+    step_5_decrease_noshow: >
+      "If tomorrow you still feel like this isn't right — that's okay. You're not dead to us.
+      I'll connect you with someone or point you in the right direction. I still want you to win."
+    step_6_frame_both_outcomes: >
+      "If tomorrow you feel 'I'm still nervous but this is what I need to do' — we'll get started.
+      If it's a no, I still want you to win. Regardless, we're talking tomorrow. Fair?"
+
+  bamfam:
+    name: "Book A Meeting From A Meeting"
+    when: "Urgency 4-6, real reason timing is off (not just avoidance)"
+    script: >
+      "It sounds like [X] is holding you back right now. When do you think that changes?
+      Let's put a specific date in the calendar for when things are different."
+    note: "Set a FIRM date. Don't say 'reach out when you're ready' — they won't."
+
+#---
+
+##
+## DISQUALIFICATION GUIDE
+##
+
+disqualification:
+  when_to_dq:
+    signals:
+      - "Urgency 1-4 with no compelling reason to change (by minute 10)"
+      - "Goals clearly misaligned with what your offer delivers"
+      - "Cannot meet minimum payment under any structure"
+      - "Repeated evasion of direct questions"
+    from_kubecraft_data: >
+      On 20 calls where archetype was unclear at minute 10: 0 closes.
+      If you can't detect archetype, urgency is probably low. DQ or BAMFAM.
+
+  how_to_dq_gracefully:
+    script: >
+      "Honestly, based on what you've shared, I don't think the timing is right.
+      [If financial]: Here's what I'd recommend for where you are: [free resource/alternative].
+      [If misaligned]: We're probably not the best fit for what you're trying to do.
+      Here's what I'd suggest instead: [specific referral]."
+    note: >
+      A short call with a graceful DQ is better than a 90-minute call with a forced close.
+      Forced closes churn. Graceful DQs create goodwill and future referrals.
+
+#---
+
+##
+## CUSTOMIZATION CHECKLIST
+##
+
+customization_checklist:
+  replace_these_placeholders:
+    - "{{OFFER_NAME}}: Your program or product name"
+    - "{{OFFER_PRICE}}: Investment amount (e.g., '$3,500')"
+    - "{{DOMAIN}}: The field being sold into (e.g., 'DevOps', 'copywriting')"
+    - "{{OUTCOME}}: What the buyer achieves (specific and concrete)"
+    - "{{OUTCOME_METRIC}}: The measurable result (salary, revenue, close rate)"
+    - "{{TIMELINE}}: Realistic time to outcome (e.g., '6-12 months')"
+    - "{{OFFER_COMPONENTS}}: Your 4-6 core deliverables in Phase 11"
+    - "{{ORIGIN_STORY}}: Best student success story (name, starting point, result, timeframe)"
+
+  do_not_change:
+    - "Universal principles (Part 1) — these apply across all offers"
+    - "Objection handler scripts (Part 3) — objections don't change by offer"
+    - "Follow-up protocol (Part 4) — leadership model is universal"
+    - "Archetype system — the 5 types appear in every high-ticket context"
+    - "Tie-down system — Five C's are universal"
+
+  validate_before_going_live:
+    - "Phase 4 baseline questions are domain-specific"
+    - "Phase 5 goal questions reference your {{OUTCOME_METRIC}}"
+    - "Phase 11 pitch components match your actual deliverables"
+    - "Close scripts reference your {{OFFER_PRICE}} and {{OUTCOME}}"
+    - "{{ORIGIN_STORY}} is specific: name, starting point, result, timeframe"
+    - "You know the objection handlers well enough to deliver them in YOUR voice"
+
+  empirical_baselines_from_kubecraft:
+    note: "Use these as benchmarks when applying to a new offer. Adjust as you collect data."
+    close_rate_by_archetype:
+      pain_buyer: "~49% (36/74)"
+      vision_buyer: "~50% (17/34)"
+      crisis_buyer: "~50% (2/4 — small sample)"
+      unclear: "0% (20/20) — if you can't detect archetype, DQ or BAMFAM"
+    top_close_triggers:
+      - "Prospect uses 'when I start' / 'when I join' language"
+      - "Asks about payment options unprompted"
+      - "Rates program fit 8-10 unprompted"
+      - "Asks follow-up questions about curriculum/logistics"
+    top_loss_causes:
+      - "~80% financial — cannot afford under any payment structure"
+      - "~15% wrong fit — goals misaligned"
+      - "~5% logistics/trust breakdown"
