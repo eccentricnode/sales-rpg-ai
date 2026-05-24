@@ -3,12 +3,13 @@
 - **Ground truth from this planning pass**
   - Branch is `phase5/ralph-loop`; `IMPLEMENTATION_PLAN.md` was absent before this pass.
   - `src/lib` does not exist. Treat `src/realtime`, `src/rag`, `src/integrations`, and `src/web` as the shared implementation layer for Phase 5 work.
-  - `prd.json` has been made honest for this iteration: S5-01, S5-02, S5-03, S5-04, and S5-07 are `passes: true` with current test evidence, S5-05 is `passes: false`, and S5-06/S5-08 are `passes: "deferred"` pending live Vexa/desktop probes.
+  - `prd.json` has been made honest for this iteration: S5-01, S5-02, S5-03, S5-04, and S5-07 are `passes: true` with current test evidence, and S5-05/S5-06/S5-08 are `passes: "deferred"` pending provider latency, live Vexa, and desktop probes.
   - Prior S5-02 sine-fixture finding is resolved: the failure came from using real Silero + Whisper on a pure sine fixture, which violates `specs/05-vad_transcriber.md`; the acceptance probe now mocks VAD/Whisper and verifies chunk continuity.
   - Local probe: `uv run pytest -q tests/test_s5_acceptance.py::TestS5_02_MicCutoff -vv` => **3 passed**.
   - Local probe: `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **67 passed**.
   - Local probe: `pytest -q tests/test_behavioral.py` => **44 passed**.
   - Local probe: `pytest -q tests/test_latency_benchmark.py` => **3 passed**.
+  - Current iteration finding: S5-05 runtime path gap is resolved because `/ws/audio` recorder transcript segments now flow through `DualBufferManager`/`AnalysisOrchestrator`, so normal VAD and WhisperLive transcript flow can emit `analysis_delta` streamed coaching.
   - S5-06 increment completed locally: `VexaClient` now selects the installed `websockets` header kwarg, using `extra_headers` for `websockets==10.4` while allowing newer clients to use `additional_headers`.
   - S5-06 increment completed locally: the web app exposes `/api/vexa/join`, `/api/vexa/status`, and `/api/vexa/stop`, and the dashboard now includes a meeting URL Join control.
   - S5-06 increment completed locally: Vexa transcript bridge events feed `SummaryEngine`, `DualBufferManager`, and broadcast consumers; `/ws/dual-audio` segment callbacks now also feed their existing `DualBufferManager`.
@@ -34,8 +35,9 @@
     - `uv run ruff check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py && uv run ruff format --check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py` => **All checks passed / 3 files already formatted**.
     - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_vexa_web.py` => **77 passed, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
     - `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
-  - S5-05 increment completed locally: `StreamingAnalyzer` supports `on_chunk` partial callbacks plus per-call model/timeout; `analyze_with_fallback()` captures the primary model and suppresses late primary chunks instead of mutating `self.model`; `AnalysisOrchestrator` uses `analyze_with_fallback()` in the worker path and emits `AnalysisStreamChunk` partial callbacks; Vexa and dual-audio web paths broadcast `analysis_delta`; browser JavaScript renders streamed live coaching partials; `LLMConfig` supports `fallback_model` from provider-specific `*_FALLBACK_MODEL` or `LLM_FALLBACK_MODEL`.
-  - S5-05 evidence: `uv run pytest -q tests/test_s5_acceptance.py::TestS5_05_Latency tests/test_latency_benchmark.py tests/test_behavioral.py::TestLLMProviderBehavior tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestAnalysisOrchestratorBehavior -vv` => **24 passed**.
+  - S5-05 increment completed locally: `StreamingAnalyzer` supports `on_chunk` partial callbacks plus per-call model/timeout; `analyze_with_fallback()` captures the primary model and suppresses late primary chunks instead of mutating `self.model`; `AnalysisOrchestrator` uses `analyze_with_fallback()` in the worker path and emits `AnalysisStreamChunk` partial callbacks; Vexa, dual-audio, and `/ws/audio` recorder transcript paths broadcast `analysis_delta`; browser JavaScript renders streamed live coaching partials; `LLMConfig` supports `fallback_model` from provider-specific `*_FALLBACK_MODEL` or `LLM_FALLBACK_MODEL`.
+  - S5-05 evidence: `uv run pytest -q tests/test_s5_acceptance.py::TestS5_05_Latency tests/test_latency_benchmark.py tests/test_behavioral.py::TestLLMProviderBehavior tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestAnalysisOrchestratorBehavior -vv` => **28 passed**.
+  - S5-05 provider latency probe deferred here: all checked API credential environment variables were unset, and `curl -fsS --max-time 2 http://127.0.0.1:8080/v1/models` failed to connect.
   - S5-05 evidence: `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_latency_benchmark.py tests/test_vexa_web.py` => **89 passed, 1 warning**.
   - S5-05 evidence: `uv run pytest -q` => **110 passed, 4 skipped, 1 warning**.
   - S5-05 touched-file quality gates passed for `src/realtime/analysis_orchestrator.py`, `src/realtime/llm_provider.py`, `src/web/app.py`, `tests/test_behavioral.py`, and `tests/test_latency_benchmark.py`: ruff check and ruff format passed on that file set.
@@ -47,6 +49,8 @@
   - S5-07 final iteration evidence after changes and `prd.json` correction: `uv run pytest -q` => **113 passed, 4 skipped, 1 warning in 17.79s**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
   - S5-07 evidence: tampered/empty KB probe via `uv run python ... verify_knowledge_base(...)` returned `valid: false` for checksum mismatch and empty file.
   - S5-07 touched-file quality gates passed: `uv run ruff check src/realtime/prompts.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py && uv run ruff format --check src/realtime/prompts.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py` => **All checks passed / 3 files already formatted**.
+  - Final current-iteration evidence: `uv run pytest -q` => **114 passed, 4 skipped, 1 warning in 17.81s**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+  - Final touched-file gates: `uv run ruff check src/web/app.py tests/test_latency_benchmark.py && uv run ruff format --check src/web/app.py tests/test_latency_benchmark.py` => **All checks passed / 2 files already formatted**.
 
 - **P0: Make `prd.json` honest before any merge**
   - Current status: completed for this iteration.
@@ -94,22 +98,31 @@
     - `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
 
 - **P4: Make S5-05 latency claims runtime-real**
-  - Current status: S5-05 increment is implemented and structurally verified, but keep S5-05 `passes: false` until real/provider-backed latency and live browser WebSocket evidence are captured.
+  - Current status: S5-05 increment is implemented and structurally verified, but keep S5-05 `passes: "deferred"` until real/provider-backed latency evidence is captured.
+  - Current iteration finding: `/ws/audio` recorder transcript segments now feed `DualBufferManager`/`AnalysisOrchestrator`, so normal VAD and WhisperLive transcript flow can emit `analysis_delta` streamed coaching.
   - Completed implementation:
     - `StreamingAnalyzer` supports `on_chunk` partial callbacks and per-call model/timeout.
     - `analyze_with_fallback()` uses a captured primary model and suppresses late primary chunks instead of mutating `self.model`.
     - `AnalysisOrchestrator` uses `analyze_with_fallback()` in the worker path and emits `AnalysisStreamChunk` partial callbacks.
     - Vexa and dual-audio web paths broadcast `analysis_delta`.
+    - `/ws/audio` recorder transcript segments flow through `DualBufferManager`/`AnalysisOrchestrator`, closing the browser recorder runtime gap.
     - Browser JavaScript renders streamed live coaching partials.
     - `LLMConfig` supports `fallback_model` from provider-specific `*_FALLBACK_MODEL` or `LLM_FALLBACK_MODEL`.
   - Tool-verified evidence:
-    - `uv run pytest -q tests/test_s5_acceptance.py::TestS5_05_Latency tests/test_latency_benchmark.py tests/test_behavioral.py::TestLLMProviderBehavior tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestAnalysisOrchestratorBehavior -vv` => **24 passed**.
+    - `uv run pytest -q tests/test_s5_acceptance.py::TestS5_05_Latency tests/test_latency_benchmark.py tests/test_behavioral.py::TestLLMProviderBehavior tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestAnalysisOrchestratorBehavior -vv` => **28 passed**.
     - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_latency_benchmark.py tests/test_vexa_web.py` => **89 passed, 1 warning**.
     - `uv run pytest -q` => **110 passed, 4 skipped, 1 warning**.
     - Touched-file ruff check/format passed for `src/realtime/analysis_orchestrator.py`, `src/realtime/llm_provider.py`, `src/web/app.py`, `tests/test_behavioral.py`, and `tests/test_latency_benchmark.py`.
+    - `uv run pytest -q` => **114 passed, 4 skipped, 1 warning in 17.81s**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+    - `uv run ruff check src/web/app.py tests/test_latency_benchmark.py && uv run ruff format --check src/web/app.py tests/test_latency_benchmark.py` => **All checks passed / 2 files already formatted**.
+  - Deferred provider probe:
+    - Could not run provider-backed latency here because all checked API credential environment variables were unset.
+    - Local OpenAI-compatible endpoint probe also unavailable: `curl -fsS --max-time 2 http://127.0.0.1:8080/v1/models` failed to connect.
   - Remaining required probes:
-    - Run a real or provider-backed benchmark recording p50 < 3s and p95 < 5s.
-    - Capture a live browser WebSocket probe proving `analysis_delta` reaches the UI and renders streamed live coaching partials before final analysis completion.
+    - Export one provider credential set and model config, including fallback model if needed: for example `LLM_PROVIDER`, provider API key/base URL variables, provider-specific `*_FALLBACK_MODEL` or `LLM_FALLBACK_MODEL`.
+    - Or start a local OpenAI-compatible provider on `127.0.0.1:8080` and confirm `curl -fsS --max-time 2 http://127.0.0.1:8080/v1/models` returns models.
+    - Run the provider-backed latency benchmark and record p50 < 3s and p95 < 5s.
+    - Capture a live browser WebSocket probe proving `analysis_delta` reaches the UI and renders streamed live coaching partials from normal recorder audio before final analysis completion.
 
 - **P5: Enforce S5-07 security startup behavior**
   - Current status: completed this iteration; `prd.json` marks S5-07 `passes: true`.
@@ -161,7 +174,8 @@
 
 - **Merge gate**
   - Every S5 story must be either honestly probe-passing or marked `[DEFERRED-VERIFY]` with the exact pre-flight steps above.
-  - Final iteration core tests are green: `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+  - Final iteration core tests are green: `uv run pytest -q` => **114 passed, 4 skipped, 1 warning in 17.81s**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+  - Final touched-file gates are green: `uv run ruff check src/web/app.py tests/test_latency_benchmark.py && uv run ruff format --check src/web/app.py tests/test_latency_benchmark.py` => **All checks passed / 2 files already formatted**.
   - Touched-file ruff gates are green for `src/realtime/vad_transcriber.py`, `tests/test_s5_acceptance.py`, `tests/test_dual_capture.py`, `tests/test_objection_detection.py`, `src/validation/script_tester.py`, `tests/test_script_tester.py`, and `tests/test_e2e_pipeline.py`.
   - Do not block this iteration on repo-wide lint/type gates without separately scoping the cleanup: `uv run ruff check src/ tests/`, `uv run ruff format --check src/ tests/`, and `uv run mypy src/ --ignore-missing-imports` remain failing from pre-existing repo-wide issues.
   - Ensure the working tree is clean except intentional evidence/spec/plan/PRD updates.

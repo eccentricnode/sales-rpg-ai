@@ -60,7 +60,7 @@
       "id": "S5-05",
       "title": "Optimize latency below 3 seconds for coaching suggestions",
       "priority": 5,
-      "passes": false,
+      "passes": "deferred",
       "depends_on": ["S5-01"],
       "acceptance_criteria": [
         "End-to-end latency from speech to coaching suggestion < 3 seconds",

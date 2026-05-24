@@ -9,6 +9,8 @@ import statistics
 import threading
 import time
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 class TestLatencyBenchmark(unittest.TestCase):
@@ -189,6 +191,88 @@ class TestLatencyBenchmark(unittest.TestCase):
         self.assertLess(p50, 3, f"p50 coaching latency {p50:.2f}s exceeds 3s threshold")
         self.assertLess(p95, 5, f"p95 coaching latency {p95:.2f}s exceeds 5s threshold")
         self.assertLess(ttft_p50, p50, "First streamed chunk should arrive before final result")
+
+    def test_audio_websocket_streams_analysis_delta_from_vad_transcript(self):
+        """The browser recorder WebSocket must stream coaching deltas before final analysis."""
+        try:
+            from fastapi.testclient import TestClient
+        except ImportError:
+            self.skipTest("fastapi[testclient] not installed")
+
+        from src.web import app as app_module
+
+        class FakeVadTranscriber:
+            def __init__(self, *args, **kwargs):
+                self.fed = False
+
+            def feed(self, chunk):
+                if self.fed:
+                    return []
+                self.fed = True
+                return [{"text": "Budget is the main concern.", "start": 0.0, "end": 1.0}]
+
+            def flush(self):
+                return []
+
+        class FakeSummaryEngine:
+            def __init__(self, *args, **kwargs):
+                self.lines = []
+
+            def start(self):
+                pass
+
+            def stop(self):
+                pass
+
+            def add_transcript(self, text):
+                self.lines.append(text)
+
+        class FastStreamingAnalyzer:
+            def __init__(self, *args, **kwargs):
+                self.client = SimpleNamespace()
+
+            def analyze_with_fallback(self, active_text, context_text="", timeout=5.0, on_chunk=None):
+                first = '{"script_location": "Objection Handling",'
+                full = (
+                    '{"script_location": "Objection Handling", '
+                    '"key_points": ["budget concern"], "suggestion": "Ask what budget range works."}'
+                )
+                on_chunk(first, first, "fast-model")
+                time.sleep(0.001)
+                on_chunk(full[len(first) :], full, "fast-model")
+                return full
+
+        with (
+            patch.object(app_module, "TRANSCRIPTION_ENGINE", "vad"),
+            patch.object(app_module, "VadTranscriber", FakeVadTranscriber),
+            patch.object(app_module, "SummaryEngine", FakeSummaryEngine),
+            patch.object(app_module, "StreamingAnalyzer", FastStreamingAnalyzer),
+            patch.object(
+                app_module,
+                "get_llm_config",
+                return_value=SimpleNamespace(api_key="test", base_url="http://fake", model="primary"),
+            ),
+        ):
+            with TestClient(app_module.app) as client:
+                with client.websocket_connect("/ws/audio") as websocket:
+                    websocket.send_bytes(b"\0" * 3200)
+
+                    messages = []
+                    deadline = time.perf_counter() + 2
+                    while time.perf_counter() < deadline:
+                        message = websocket.receive_json()
+                        messages.append(message)
+                        if message.get("type") == "analysis":
+                            break
+
+        transcript = next(message for message in messages if message.get("type") == "transcript")
+        first_delta = next(message for message in messages if message.get("type") == "analysis_delta")
+        final = next(message for message in messages if message.get("type") == "analysis")
+
+        self.assertEqual(transcript["text"], "Budget is the main concern.")
+        self.assertNotIn("suggestion", first_delta["accumulated"])
+        self.assertEqual(first_delta["model"], "fast-model")
+        self.assertEqual(final["suggestion"], "Ask what budget range works.")
 
 
 if __name__ == "__main__":

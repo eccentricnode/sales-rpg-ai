@@ -597,6 +597,52 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
         interval=300,  # 5 minutes
     )
 
+    def on_analysis_result(result: AnalysisResult):
+        data = {
+            "type": "analysis",
+            "script_location": result.state.script_location,
+            "key_points": result.state.key_points,
+            "suggestion": result.state.suggestion,
+            "latency": result.latency_ms,
+            "error": result.error,
+        }
+
+        async def _send():
+            try:
+                await websocket.send_json(data)
+                await manager.broadcast(data)
+            except Exception as e:
+                logger.error(f"Failed to send analysis: {e}")
+
+        asyncio.run_coroutine_threadsafe(_send(), loop)
+
+    def on_analysis_partial(chunk: AnalysisStreamChunk):
+        data = {
+            "type": "analysis_delta",
+            "delta": chunk.delta,
+            "accumulated": chunk.accumulated,
+            "latency": chunk.latency_ms,
+            "sequence": chunk.sequence,
+            "model": chunk.model,
+        }
+
+        async def _send():
+            try:
+                await websocket.send_json(data)
+                await manager.broadcast(data)
+            except Exception as e:
+                logger.error(f"Failed to send analysis delta: {e}")
+
+        asyncio.run_coroutine_threadsafe(_send(), loop)
+
+    orchestrator = AnalysisOrchestrator(
+        analyzer=analyzer,
+        on_result=on_analysis_result,
+        on_partial=on_analysis_partial,
+    )
+    buffer_manager = DualBufferManager(on_analysis_ready=orchestrator.submit_analysis)
+    orchestrator.start()
+
     async def handle_command(cmd_data: dict):
         """Handle text commands from the frontend."""
         command = cmd_data.get("command")
@@ -674,6 +720,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
         except Exception as e:
             logger.error(f"Failed to initialize VadTranscriber: {e}")
             await websocket.close(code=1011, reason=f"VadTranscriber init failed: {e}")
+            orchestrator.shutdown()
             return
 
         summary_engine.start()
@@ -716,6 +763,17 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
 
                         # Feed to summary engine
                         summary_engine.add_transcript(seg["text"])
+                        buffer_manager.on_transcript_chunk(
+                            seg["text"],
+                            [
+                                {
+                                    "text": seg["text"],
+                                    "start": seg["start"],
+                                    "end": seg["end"],
+                                    "completed": True,
+                                }
+                            ],
+                        )
 
                 elif "text" in message:
                     # Handle text commands from frontend
@@ -746,11 +804,23 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                         await websocket.send_json(msg_data)
                         await manager.broadcast(msg_data)
                         summary_engine.add_transcript(seg["text"])
+                        buffer_manager.on_transcript_chunk(
+                            seg["text"],
+                            [
+                                {
+                                    "text": seg["text"],
+                                    "start": seg["start"],
+                                    "end": seg["end"],
+                                    "completed": True,
+                                }
+                            ],
+                        )
                     except Exception:
                         pass
             except Exception as e:
                 logger.warning(f"Flush error (non-fatal): {e}")
             summary_engine.stop()
+            orchestrator.shutdown()
 
     else:
         # ── WhisperLiveKit: WebSocket relay (legacy) ────────────────
@@ -794,6 +864,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                     except RuntimeError:
                         pass
                     summary_engine.stop()
+                    orchestrator.shutdown()
                     return
 
         try:
@@ -868,6 +939,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                             if segments:
                                 full_text = " ".join(s["text"] for s in segments if s["text"])
                                 summary_engine.add_transcript(full_text)
+                                buffer_manager.on_transcript_chunk(full_text, segments)
 
                     except websockets.exceptions.ConnectionClosed:
                         logger.warning("WhisperLiveKit connection closed")
@@ -917,6 +989,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                 pass
         finally:
             summary_engine.stop()
+            orchestrator.shutdown()
 
 
 @app.websocket("/ws/dual-audio")
