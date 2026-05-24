@@ -31,3 +31,9 @@
 99999999999999. If you find inconsistencies in `specs/*` then use a high-reasoning subagent with 'ultrathink' requested to update the specs.
 
 999999999999999. IMPORTANT: Keep `@AGENTS.md` operational only — status updates and progress notes belong in `@IMPLEMENTATION_PLAN.md`. A bloated AGENTS.md pollutes every future loop's context.
+
+VERIFICATION DISCIPLINE (mission-specific):
+- Every `passes: true` in `prd.json` requires a tool-verified probe captured this iteration: ran the test, curled the endpoint, stood up the container, inspected the file. "Should work" / "looks fine" / "code is in place" is NOT evidence.
+- If a probe is genuinely impossible from this machine (e.g., S5-06 needs a real Zoom meeting), set the story to `passes: deferred` in `prd.json`, document exact human pre-flight steps in `@IMPLEMENTATION_PLAN.md`, and continue. Deferred is honorable; fake-passing is not.
+- When every story is `passes: true` or `passes: deferred` and the working tree is clean, perform the merge: rebase `phase5/ralph-loop` onto `main`, merge, push, write `DONE.md` summarizing verified vs deferred, exit.
+- If you hit a blocker that needs Austin (missing credential, ambiguous spec, scope decision), write `BLOCKER.md` describing what you need and exit non-zero.
