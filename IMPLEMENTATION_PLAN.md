@@ -34,6 +34,11 @@
     - `uv run ruff check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py && uv run ruff format --check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py` => **All checks passed / 3 files already formatted**.
     - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_vexa_web.py` => **77 passed, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
     - `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+  - S5-05 increment completed locally: `StreamingAnalyzer` supports `on_chunk` partial callbacks plus per-call model/timeout; `analyze_with_fallback()` captures the primary model and suppresses late primary chunks instead of mutating `self.model`; `AnalysisOrchestrator` uses `analyze_with_fallback()` in the worker path and emits `AnalysisStreamChunk` partial callbacks; Vexa and dual-audio web paths broadcast `analysis_delta`; browser JavaScript renders streamed live coaching partials; `LLMConfig` supports `fallback_model` from provider-specific `*_FALLBACK_MODEL` or `LLM_FALLBACK_MODEL`.
+  - S5-05 evidence: `uv run pytest -q tests/test_s5_acceptance.py::TestS5_05_Latency tests/test_latency_benchmark.py tests/test_behavioral.py::TestLLMProviderBehavior tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestAnalysisOrchestratorBehavior -vv` => **24 passed**.
+  - S5-05 evidence: `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_latency_benchmark.py tests/test_vexa_web.py` => **89 passed, 1 warning**.
+  - S5-05 evidence: `uv run pytest -q` => **110 passed, 4 skipped, 1 warning**.
+  - S5-05 touched-file quality gates passed for `src/realtime/analysis_orchestrator.py`, `src/realtime/llm_provider.py`, `src/web/app.py`, `tests/test_behavioral.py`, and `tests/test_latency_benchmark.py`: ruff check and ruff format passed on that file set.
   - Added missing behavioral specs: `specs/05-vad_transcriber.md`, `specs/06-websocket_reconnection.md`, `specs/07-context_engine_layer2.md`, `specs/08-latency_optimization.md`, `specs/09-vexa_integration.md`, `specs/10-security_hardening.md`, `specs/11-overlay_widget.md`.
 
 - **P0: Make `prd.json` honest before any merge**
@@ -82,14 +87,22 @@
     - `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
 
 - **P4: Make S5-05 latency claims runtime-real**
-  - Current status: structural and simulated tests pass, but runtime behavior is unproven.
-  - `StreamingAnalyzer.analyze()` uses `stream=True` but collects the full response before returning, so UI incremental display is not proven.
-  - `_try_with_fallback()` exists but the worker path calls `analyze()` directly.
-  - Required probes:
-    - Search and document runtime call path: `rg -n "analyze\\(|_try_with_fallback|stream=True" src/realtime src/web`.
-    - Probe time-to-first-token reaching the UI before full response completion.
-    - Probe primary timeout at 5 seconds invoking the fallback model in the production worker path.
+  - Current status: S5-05 increment is implemented and structurally verified, but keep S5-05 `passes: false` until real/provider-backed latency and live browser WebSocket evidence are captured.
+  - Completed implementation:
+    - `StreamingAnalyzer` supports `on_chunk` partial callbacks and per-call model/timeout.
+    - `analyze_with_fallback()` uses a captured primary model and suppresses late primary chunks instead of mutating `self.model`.
+    - `AnalysisOrchestrator` uses `analyze_with_fallback()` in the worker path and emits `AnalysisStreamChunk` partial callbacks.
+    - Vexa and dual-audio web paths broadcast `analysis_delta`.
+    - Browser JavaScript renders streamed live coaching partials.
+    - `LLMConfig` supports `fallback_model` from provider-specific `*_FALLBACK_MODEL` or `LLM_FALLBACK_MODEL`.
+  - Tool-verified evidence:
+    - `uv run pytest -q tests/test_s5_acceptance.py::TestS5_05_Latency tests/test_latency_benchmark.py tests/test_behavioral.py::TestLLMProviderBehavior tests/test_behavioral.py::TestStreamingAnalyzerBehavior tests/test_behavioral.py::TestAnalysisOrchestratorBehavior -vv` => **24 passed**.
+    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_latency_benchmark.py tests/test_vexa_web.py` => **89 passed, 1 warning**.
+    - `uv run pytest -q` => **110 passed, 4 skipped, 1 warning**.
+    - Touched-file ruff check/format passed for `src/realtime/analysis_orchestrator.py`, `src/realtime/llm_provider.py`, `src/web/app.py`, `tests/test_behavioral.py`, and `tests/test_latency_benchmark.py`.
+  - Remaining required probes:
     - Run a real or provider-backed benchmark recording p50 < 3s and p95 < 5s.
+    - Capture a live browser WebSocket probe proving `analysis_delta` reaches the UI and renders streamed live coaching partials before final analysis completion.
 
 - **P5: Enforce S5-07 security startup behavior**
   - Current status: startup integrity subtask resolved this iteration; S5-07 remains incomplete until all security hardening criteria are proven.

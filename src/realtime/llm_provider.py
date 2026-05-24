@@ -8,6 +8,7 @@ LLM providers. All providers use the OpenAI-compatible API format.
 import logging
 import os
 from dataclasses import dataclass
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +21,14 @@ class LLMConfig:
     base_url: str
     model: str
     provider: str
+    fallback_model: Optional[str] = None
 
     def __repr__(self) -> str:
         masked = self.api_key[:4] + "***" if len(self.api_key) > 4 else "***"
         return (
             f"LLMConfig(api_key='{masked}', base_url='{self.base_url}', "
-            f"model='{self.model}', provider='{self.provider}')"
+            f"model='{self.model}', provider='{self.provider}', "
+            f"fallback_model='{self.fallback_model}')"
         )
 
 
@@ -64,6 +67,10 @@ _DEFAULTS = {
 SUPPORTED_PROVIDERS = list(_DEFAULTS.keys())
 
 
+def _fallback_model(provider: str, prefix: str) -> Optional[str]:
+    return os.getenv(f"{prefix}_FALLBACK_MODEL") or os.getenv("LLM_FALLBACK_MODEL") or None
+
+
 def get_llm_config(provider: str | None = None) -> LLMConfig:
     """
     Get LLM configuration for the specified or default provider.
@@ -85,7 +92,13 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
         base_url = os.getenv("LOCAL_AI_BASE_URL", _DEFAULTS["local"]["base_url"])
         model = os.getenv("LOCAL_AI_MODEL", _DEFAULTS["local"]["model"])
         logger.info(f"Using LocalAI at {base_url} ({model})")
-        return LLMConfig(api_key="local", base_url=base_url, model=model, provider=provider)
+        return LLMConfig(
+            api_key="local",
+            base_url=base_url,
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "LOCAL_AI"),
+        )
 
     if provider == "github":
         token = os.getenv("GITHUB_TOKEN", "")
@@ -93,7 +106,13 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
             raise ValueError("GITHUB_TOKEN not set. Get one at: https://github.com/settings/tokens")
         model = os.getenv("GITHUB_MODEL", _DEFAULTS["github"]["model"])
         logger.info(f"Using GitHub Models ({model})")
-        return LLMConfig(api_key=token, base_url=_DEFAULTS["github"]["base_url"], model=model, provider=provider)
+        return LLMConfig(
+            api_key=token,
+            base_url=_DEFAULTS["github"]["base_url"],
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "GITHUB"),
+        )
 
     if provider == "openrouter":
         key = os.getenv("OPENROUTER_API_KEY", "")
@@ -101,7 +120,13 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
             raise ValueError("OPENROUTER_API_KEY not set. Get one at: https://openrouter.ai/keys")
         model = os.getenv("OPENROUTER_MODEL", _DEFAULTS["openrouter"]["model"])
         logger.info(f"Using OpenRouter ({model})")
-        return LLMConfig(api_key=key, base_url=_DEFAULTS["openrouter"]["base_url"], model=model, provider=provider)
+        return LLMConfig(
+            api_key=key,
+            base_url=_DEFAULTS["openrouter"]["base_url"],
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "OPENROUTER"),
+        )
 
     if provider == "azure":
         key = os.getenv("AZURE_OPENAI_API_KEY", "")
@@ -111,7 +136,13 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
             raise ValueError("AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, and AZURE_OPENAI_DEPLOYMENT required")
         base_url = f"{endpoint.rstrip('/')}/openai/deployments/{deployment}"
         logger.info(f"Using Azure OpenAI ({deployment})")
-        return LLMConfig(api_key=key, base_url=base_url, model=deployment, provider=provider)
+        return LLMConfig(
+            api_key=key,
+            base_url=base_url,
+            model=deployment,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "AZURE_OPENAI"),
+        )
 
     if provider == "azure_ai":
         key = os.getenv("AZURE_AI_API_KEY", "")
@@ -120,7 +151,13 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
         base_url = os.getenv("AZURE_AI_BASE_URL", _DEFAULTS["azure_ai"]["base_url"])
         model = os.getenv("AZURE_AI_MODEL", _DEFAULTS["azure_ai"]["model"])
         logger.info(f"Using Azure AI Inference ({model})")
-        return LLMConfig(api_key=key, base_url=base_url, model=model, provider=provider)
+        return LLMConfig(
+            api_key=key,
+            base_url=base_url,
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "AZURE_AI"),
+        )
 
     if provider == "openai":
         key = os.getenv("OPENAI_API_KEY", "")
@@ -128,7 +165,13 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
             raise ValueError("OPENAI_API_KEY not set")
         model = os.getenv("OPENAI_MODEL", _DEFAULTS["openai"]["model"])
         logger.info(f"Using OpenAI ({model})")
-        return LLMConfig(api_key=key, base_url=_DEFAULTS["openai"]["base_url"], model=model, provider=provider)
+        return LLMConfig(
+            api_key=key,
+            base_url=_DEFAULTS["openai"]["base_url"],
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "OPENAI"),
+        )
 
     if provider == "gemini":
         key = os.getenv("GEMINI_API_KEY", "")
@@ -136,8 +179,12 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
             raise ValueError("GEMINI_API_KEY not set. Get one at: https://aistudio.google.com/apikey")
         model = os.getenv("GEMINI_MODEL", _DEFAULTS["gemini"]["model"])
         logger.info(f"Using Google Gemini ({model})")
-        return LLMConfig(api_key=key, base_url=_DEFAULTS["gemini"]["base_url"], model=model, provider=provider)
+        return LLMConfig(
+            api_key=key,
+            base_url=_DEFAULTS["gemini"]["base_url"],
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "GEMINI"),
+        )
 
-    raise ValueError(
-        f"Unknown LLM_PROVIDER: {provider}. Options: {', '.join(SUPPORTED_PROVIDERS)}"
-    )
+    raise ValueError(f"Unknown LLM_PROVIDER: {provider}. Options: {', '.join(SUPPORTED_PROVIDERS)}")

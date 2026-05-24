@@ -35,6 +35,7 @@ class AudioClient {
         // State
         this.hasSummary = false;
         this.recommendationCount = 0;
+        this.streamingAnalysisEntry = null;
 
         this.setupEventListeners();
     }
@@ -280,6 +281,9 @@ class AudioClient {
                 // Legacy analysis — show as suggestion
                 this.handleAnalysis(data);
                 break;
+            case 'analysis_delta':
+                this.handleAnalysisDelta(data);
+                break;
             case 'error':
                 console.error("Server Error:", data.error || data.message);
                 break;
@@ -432,12 +436,57 @@ class AudioClient {
 
     handleAnalysis(data) {
         // Legacy: constant analysis results (script_location, key_points, suggestion)
-        // Display as a recommendation-like entry
         if (data.key_points && data.key_points.length > 0) {
             this.keyPointsList.innerHTML = data.key_points
                 .map(p => `<li>${this.escapeHtml(p)}</li>`)
                 .join('');
         }
+
+        if (!data.suggestion && !data.error) return;
+
+        const entry = this.streamingAnalysisEntry || document.createElement('div');
+        entry.classList.add('recommendation-entry');
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const latencyText = data.latency ? ` &middot; ${Math.round(data.latency)}ms` : '';
+        const location = data.script_location || 'Live coaching';
+        const body = data.error ? data.error : data.suggestion;
+
+        entry.innerHTML = `
+            <div class="recommendation-header">
+                <span class="recommendation-stage stage-discovery">${this.escapeHtml(location)}</span>
+                <span class="recommendation-meta">${timeStr}${latencyText}</span>
+            </div>
+            <div class="recommendation-reasoning">${this.escapeHtml(body)}</div>
+        `;
+
+        if (!entry.parentElement) {
+            this.recommendationContent.prepend(entry);
+        }
+        const placeholder = this.recommendationContent.querySelector('.placeholder-text');
+        if (placeholder) placeholder.remove();
+        this.streamingAnalysisEntry = null;
+    }
+
+    handleAnalysisDelta(data) {
+        const entry = this.streamingAnalysisEntry || document.createElement('div');
+        entry.classList.add('recommendation-entry', 'streaming');
+        const latencyText = data.latency ? ` &middot; ${Math.round(data.latency)}ms` : '';
+
+        entry.innerHTML = `
+            <div class="recommendation-header">
+                <span class="recommendation-stage stage-discovery">Live coaching</span>
+                <span class="recommendation-meta">streaming${latencyText}</span>
+            </div>
+            <div class="recommendation-reasoning">${this.escapeHtml(data.accumulated || data.delta || '')}</div>
+        `;
+
+        if (!entry.parentElement) {
+            this.recommendationContent.prepend(entry);
+        }
+        const placeholder = this.recommendationContent.querySelector('.placeholder-text');
+        if (placeholder) placeholder.remove();
+        this.streamingAnalysisEntry = entry;
     }
 
     // ── Utilities ─────────────────────────────────────────────────

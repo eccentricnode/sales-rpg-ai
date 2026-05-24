@@ -38,6 +38,17 @@ class AnalysisResult:
     error: Optional[str] = None
 
 
+@dataclass
+class AnalysisStreamChunk:
+    active_text: str
+    timestamp: float
+    latency_ms: float
+    delta: str
+    accumulated: str
+    sequence: int
+    model: str
+
+
 class StreamingAnalyzer:
     def __init__(self, api_key: str, base_url: str, model: str, fallback_model: Optional[str] = None):
         self.client = OpenAI(base_url=base_url, api_key=api_key)
@@ -152,7 +163,14 @@ class StreamingAnalyzer:
         title = metadata.get("section", section.get("id", "unknown"))
         return f"[Source: {source} | Section: {title}]\n{section.get('text', '')}"
 
-    def analyze(self, active_text: str, context_text: str = "") -> str:
+    def analyze(
+        self,
+        active_text: str,
+        context_text: str = "",
+        on_chunk: Optional[Callable[[str, str], None]] = None,
+        model: Optional[str] = None,
+        timeout: float = 30,
+    ) -> str:
         """Analyze text using streaming LLM responses for lower latency."""
         # Build user message with context if available
         if context_text:
@@ -169,12 +187,13 @@ class StreamingAnalyzer:
         else:
             system_prompt = self.system_prompt
 
+        model_name = model or self.model
         response = self.client.chat.completions.create(
-            model=self.model,
+            model=model_name,
             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}],
             max_tokens=500,
             temperature=0.1,
-            timeout=30,
+            timeout=timeout,
             stop=["<|end|>", "<|end_of_text|>", "<|im_end|>", "\n\n"],
             stream=True,
         )
@@ -183,7 +202,10 @@ class StreamingAnalyzer:
         chunks = []
         for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
-                chunks.append(chunk.choices[0].delta.content)
+                delta = chunk.choices[0].delta.content
+                chunks.append(delta)
+                if on_chunk:
+                    on_chunk(delta, "".join(chunks))
         content = "".join(chunks)
 
         # Clean markdown
@@ -193,6 +215,67 @@ class StreamingAnalyzer:
             content = content.split("```")[0]
 
         return content.strip()
+
+    def analyze_with_fallback(
+        self,
+        active_text: str,
+        context_text: str = "",
+        timeout: float = 5.0,
+        on_chunk: Optional[Callable[[str, str, str], None]] = None,
+    ) -> str:
+        """Analyze with a bounded primary wait and optional fallback model.
+
+        The primary call runs with the primary model name captured as an
+        argument. If it times out, late primary chunks are suppressed so they
+        cannot overwrite fallback output in the UI.
+        """
+        result: list[Optional[str]] = [None]
+        error: list[Optional[Exception]] = [None]
+        suppress_primary_chunks = threading.Event()
+        primary_model = self.model
+
+        def primary_chunk(delta: str, accumulated: str) -> None:
+            if on_chunk and not suppress_primary_chunks.is_set():
+                on_chunk(delta, accumulated, primary_model)
+
+        def _run_primary():
+            try:
+                result[0] = self.analyze(
+                    active_text,
+                    context_text,
+                    on_chunk=primary_chunk,
+                    model=primary_model,
+                    timeout=timeout,
+                )
+            except Exception as e:
+                error[0] = e
+
+        thread = threading.Thread(target=_run_primary, daemon=True)
+        thread.start()
+        thread.join(timeout=timeout)
+
+        if not thread.is_alive() and error[0] is None:
+            return result[0] or ""
+
+        suppress_primary_chunks.set()
+        if self.fallback_model:
+            fallback_model = self.fallback_model
+
+            def fallback_chunk(delta: str, accumulated: str) -> None:
+                if on_chunk:
+                    on_chunk(delta, accumulated, fallback_model)
+
+            return self.analyze(
+                active_text,
+                context_text,
+                on_chunk=fallback_chunk,
+                model=fallback_model,
+                timeout=30,
+            )
+
+        if error[0]:
+            raise error[0]
+        raise TimeoutError(f"Primary model timed out after {timeout}s and no fallback configured")
 
     def _try_with_fallback(self, text: str, timeout: float = 5.0) -> str:
         """Try primary model, fall back to fallback_model if timeout exceeded.
@@ -204,34 +287,7 @@ class StreamingAnalyzer:
         Returns:
             Analysis result from primary or fallback model.
         """
-        result = [None]
-        error = [None]
-
-        def _run_primary():
-            try:
-                result[0] = self.analyze(text)
-            except Exception as e:
-                error[0] = e
-
-        thread = threading.Thread(target=_run_primary)
-        thread.start()
-        thread.join(timeout=timeout)
-
-        if thread.is_alive() or error[0] is not None:
-            # Primary timed out or errored — try fallback
-            if self.fallback_model:
-                original_model = self.model
-                self.model = self.fallback_model
-                try:
-                    return self.analyze(text)
-                finally:
-                    self.model = original_model
-            else:
-                if error[0]:
-                    raise error[0]
-                raise TimeoutError(f"Primary model timed out after {timeout}s and no fallback configured")
-
-        return result[0]
+        return self.analyze_with_fallback(text, timeout=timeout)
 
     def recommend(self, summary: str, key_points: list[str], stage: str, context_text: str = "") -> str:
         """
@@ -275,9 +331,17 @@ class StreamingAnalyzer:
 
 
 class AnalysisOrchestrator:
-    def __init__(self, analyzer: StreamingAnalyzer, on_result: Callable[[AnalysisResult], None]):
+    def __init__(
+        self,
+        analyzer: StreamingAnalyzer,
+        on_result: Callable[[AnalysisResult], None],
+        on_partial: Optional[Callable[[AnalysisStreamChunk], None]] = None,
+        fallback_timeout_seconds: float = 5.0,
+    ):
         self.analyzer = analyzer
         self.on_result = on_result
+        self.on_partial = on_partial
+        self.fallback_timeout_seconds = fallback_timeout_seconds
         self.queue = queue.Queue()
         self.running = False
         self.worker_thread = None
@@ -301,9 +365,31 @@ class AnalysisOrchestrator:
             try:
                 req = self.queue.get(timeout=0.5)
                 start_time = time.time()
+                sequence = 0
+
+                def on_chunk(delta: str, accumulated: str, model: str) -> None:
+                    nonlocal sequence
+                    sequence += 1
+                    if self.on_partial:
+                        self.on_partial(
+                            AnalysisStreamChunk(
+                                active_text=req.active_text,
+                                timestamp=time.time(),
+                                latency_ms=(time.time() - start_time) * 1000,
+                                delta=delta,
+                                accumulated=accumulated,
+                                sequence=sequence,
+                                model=model,
+                            )
+                        )
 
                 try:
-                    raw_json = self.analyzer.analyze(req.active_text, req.context_text)
+                    raw_json = self.analyzer.analyze_with_fallback(
+                        req.active_text,
+                        req.context_text,
+                        timeout=self.fallback_timeout_seconds,
+                        on_chunk=on_chunk,
+                    )
                     data = json.loads(raw_json)
 
                     state = ConversationState(

@@ -33,7 +33,12 @@ from dotenv import load_dotenv
 load_dotenv(project_root / ".env")
 
 from src.rag.integrity import verify_knowledge_base
-from src.realtime.analysis_orchestrator import AnalysisOrchestrator, AnalysisResult, StreamingAnalyzer
+from src.realtime.analysis_orchestrator import (
+    AnalysisOrchestrator,
+    AnalysisResult,
+    AnalysisStreamChunk,
+    StreamingAnalyzer,
+)
 from src.realtime.buffer_manager import DualBufferManager
 from src.realtime.llm_provider import get_llm_config
 from src.realtime.summary_engine import SummaryEngine, SummaryResult
@@ -407,6 +412,7 @@ async def join_vexa_meeting(request: Request):
             api_key=llm_cfg.api_key,
             base_url=llm_cfg.base_url,
             model=llm_cfg.model,
+            fallback_model=getattr(llm_cfg, "fallback_model", None),
         )
     except ValueError as e:
         return JSONResponse(status_code=503, content={"status": "error", "error": f"LLM configuration error: {e}"})
@@ -437,13 +443,25 @@ async def join_vexa_meeting(request: Request):
         }
         asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
 
+    def on_analysis_partial(chunk: AnalysisStreamChunk):
+        data = {
+            "type": "analysis_delta",
+            "source": "vexa",
+            "delta": chunk.delta,
+            "accumulated": chunk.accumulated,
+            "latency": chunk.latency_ms,
+            "sequence": chunk.sequence,
+            "model": chunk.model,
+        }
+        asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
+
     summary_engine = SummaryEngine(
         client=analyzer.client,
         model=llm_cfg.model,
         on_summary=on_summary_result,
         interval=300,
     )
-    orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_analysis_result)
+    orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_analysis_result, on_partial=on_analysis_partial)
     buffer_manager = DualBufferManager(on_analysis_ready=orchestrator.submit_analysis)
 
     client = VexaClient(VexaConfig())
@@ -531,7 +549,12 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
     # Initialize LLM components
     try:
         llm_cfg = get_llm_config()
-        analyzer = StreamingAnalyzer(api_key=llm_cfg.api_key, base_url=llm_cfg.base_url, model=llm_cfg.model)
+        analyzer = StreamingAnalyzer(
+            api_key=llm_cfg.api_key,
+            base_url=llm_cfg.base_url,
+            model=llm_cfg.model,
+            fallback_model=getattr(llm_cfg, "fallback_model", None),
+        )
     except ValueError as e:
         logger.error(f"LLM configuration error: {e}")
         await websocket.close(code=1011, reason=str(e))
@@ -968,7 +991,12 @@ async def dual_audio_endpoint(websocket: WebSocket):
     # Initialize components for analysis (optional)
     try:
         llm_cfg = get_llm_config()
-        analyzer = StreamingAnalyzer(api_key=llm_cfg.api_key, base_url=llm_cfg.base_url, model=llm_cfg.model)
+        analyzer = StreamingAnalyzer(
+            api_key=llm_cfg.api_key,
+            base_url=llm_cfg.base_url,
+            model=llm_cfg.model,
+            fallback_model=getattr(llm_cfg, "fallback_model", None),
+        )
     except ValueError as e:
         logger.warning(f"LLM not configured: {e}")
         analyzer = None
@@ -990,10 +1018,24 @@ async def dual_audio_endpoint(websocket: WebSocket):
             asyncio.run_coroutine_threadsafe(websocket.send_json(data), loop)
             asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
 
+        def on_analysis_partial(chunk: AnalysisStreamChunk):
+            data = {
+                "type": "analysis_delta",
+                "delta": chunk.delta,
+                "accumulated": chunk.accumulated,
+                "latency": chunk.latency_ms,
+                "sequence": chunk.sequence,
+                "model": chunk.model,
+            }
+            asyncio.run_coroutine_threadsafe(websocket.send_json(data), loop)
+            asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
+
         def on_analysis_ready(active_text: str, context_text: str):
             orchestrator.submit_analysis(active_text, context_text)
 
-        orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_analysis_result)
+        orchestrator = AnalysisOrchestrator(
+            analyzer=analyzer, on_result=on_analysis_result, on_partial=on_analysis_partial
+        )
         buffer_manager = DualBufferManager(on_analysis_ready=on_analysis_ready, on_state_analysis_ready=lambda x: None)
         orchestrator.start()
 

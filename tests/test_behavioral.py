@@ -227,6 +227,15 @@ class TestLLMProviderBehavior(unittest.TestCase):
         self.assertIn("localhost", cfg.base_url)
         self.assertTrue(cfg.model)  # non-empty
 
+    def test_fallback_model_can_be_configured(self):
+        """Fallback model is carried through provider config for runtime timeout fallback."""
+        from src.realtime.llm_provider import get_llm_config
+
+        with patch.dict(os.environ, {"LLM_FALLBACK_MODEL": "fast-model"}, clear=False):
+            cfg = get_llm_config("local")
+
+        self.assertEqual(cfg.fallback_model, "fast-model")
+
     def test_github_provider_requires_token(self):
         """GitHub provider raises ValueError without GITHUB_TOKEN."""
         from src.realtime.llm_provider import get_llm_config
@@ -569,6 +578,27 @@ class TestStreamingAnalyzerBehavior(unittest.TestCase):
         self.assertEqual(parsed["suggestion"], "Ask about needs")
 
     @patch.dict(os.environ, {"USE_RAG": "false"}, clear=False)
+    def test_analyze_emits_incremental_chunks(self):
+        """analyze() can surface provider stream chunks before the final JSON is complete."""
+        from src.realtime.analysis_orchestrator import StreamingAnalyzer
+
+        analyzer = StreamingAnalyzer(api_key="test", base_url="http://fake", model="test-model")
+        mock_response = [
+            self._make_mock_chunk('{"script_location":'),
+            self._make_mock_chunk(' "Opening",'),
+            self._make_mock_chunk(' "key_points": [], "suggestion": "Ask"}'),
+        ]
+        analyzer.client = MagicMock()
+        analyzer.client.chat.completions.create.return_value = iter(mock_response)
+
+        chunks = []
+        result = analyzer.analyze("Hello", on_chunk=lambda delta, accumulated: chunks.append((delta, accumulated)))
+
+        self.assertEqual(chunks[0], ('{"script_location":', '{"script_location":'))
+        self.assertLess(len(chunks[0][1]), len(result), "First streamed chunk must precede the full response")
+        self.assertEqual(json.loads(result)["suggestion"], "Ask")
+
+    @patch.dict(os.environ, {"USE_RAG": "false"}, clear=False)
     def test_analyze_cleans_markdown_wrapping(self):
         """analyze() strips ```json``` markdown from LLM response."""
         from src.realtime.analysis_orchestrator import StreamingAnalyzer
@@ -596,9 +626,9 @@ class TestStreamingAnalyzerBehavior(unittest.TestCase):
 
         models_used = []
 
-        def mock_analyze(text, context=""):
-            models_used.append(analyzer.model)
-            if analyzer.model == "slow-model":
+        def mock_analyze(text, context="", on_chunk=None, model=None, timeout=30):
+            models_used.append(model or analyzer.model)
+            if (model or analyzer.model) == "slow-model":
                 time.sleep(2)  # Simulate slow response
                 return '{"result": "slow"}'
             return '{"result": "fast"}'
@@ -616,13 +646,47 @@ class TestStreamingAnalyzerBehavior(unittest.TestCase):
 
         analyzer = StreamingAnalyzer(api_key="test", base_url="http://fake", model="slow-model", fallback_model=None)
 
-        def mock_analyze(text, context=""):
+        def mock_analyze(text, context="", on_chunk=None, model=None, timeout=30):
             time.sleep(2)
             return '{"result": "slow"}'
 
         analyzer.analyze = mock_analyze
         with self.assertRaises(TimeoutError):
             analyzer._try_with_fallback("test", timeout=0.1)
+
+    @patch.dict(os.environ, {"USE_RAG": "false"}, clear=False)
+    def test_fallback_preserves_context_without_mutating_model(self):
+        """Fallback calls carry context and do not mutate shared model state."""
+        from src.realtime.analysis_orchestrator import StreamingAnalyzer
+
+        analyzer = StreamingAnalyzer(
+            api_key="test", base_url="http://fake", model="slow-model", fallback_model="fast-model"
+        )
+        calls = []
+        chunks = []
+
+        def mock_analyze(text, context="", on_chunk=None, model=None, timeout=30):
+            calls.append((text, context, model, timeout))
+            if model == "slow-model":
+                time.sleep(0.2)
+                if on_chunk:
+                    on_chunk("late", "late")
+                return '{"result": "slow"}'
+            if on_chunk:
+                on_chunk("fast", "fast")
+            return '{"result": "fast"}'
+
+        analyzer.analyze = mock_analyze
+        result = analyzer.analyze_with_fallback(
+            "active", "context", timeout=0.05, on_chunk=lambda delta, accumulated, model: chunks.append((delta, model))
+        )
+        time.sleep(0.25)
+
+        self.assertEqual(json.loads(result)["result"], "fast")
+        self.assertEqual(analyzer.model, "slow-model")
+        self.assertIn(("active", "context", "slow-model", 0.05), calls)
+        self.assertIn(("active", "context", "fast-model", 30), calls)
+        self.assertEqual(chunks, [("fast", "fast-model")])
 
 
 # ──────────────────────────────────────────────────────────────
@@ -699,6 +763,50 @@ class TestAnalysisOrchestratorBehavior(unittest.TestCase):
             time.sleep(1)
             self.assertGreater(len(results), 0)
             self.assertIsNotNone(results[0].error, "Error result should have error field set")
+        finally:
+            orch.shutdown()
+
+    def test_worker_streams_partials_and_uses_fallback_entrypoint(self):
+        """Production worker path surfaces partial chunks and calls analyze_with_fallback."""
+        from src.realtime.analysis_orchestrator import AnalysisOrchestrator
+
+        class FakeAnalyzer:
+            def __init__(self):
+                self.calls = []
+
+            def analyze_with_fallback(self, active_text, context_text="", timeout=5.0, on_chunk=None):
+                self.calls.append((active_text, context_text, timeout))
+                on_chunk('{"script_location":', '{"script_location":', "fast-model")
+                on_chunk(
+                    ' "Opening", "key_points": [], "suggestion": "Ask"}',
+                    '{"script_location": "Opening", "key_points": [], "suggestion": "Ask"}',
+                    "fast-model",
+                )
+                return '{"script_location": "Opening", "key_points": [], "suggestion": "Ask"}'
+
+        analyzer = FakeAnalyzer()
+        results = []
+        partials = []
+        orch = AnalysisOrchestrator(
+            analyzer,
+            on_result=lambda r: results.append(r),
+            on_partial=lambda chunk: partials.append(chunk),
+            fallback_timeout_seconds=0.25,
+        )
+        orch.start()
+
+        try:
+            orch.submit_analysis("Hello", "Prior context")
+            deadline = time.time() + 1
+            while not results and time.time() < deadline:
+                time.sleep(0.01)
+
+            self.assertEqual(analyzer.calls, [("Hello", "Prior context", 0.25)])
+            self.assertEqual(len(partials), 2)
+            self.assertEqual(partials[0].sequence, 1)
+            self.assertEqual(partials[0].model, "fast-model")
+            self.assertLess(len(partials[0].accumulated), len(results[0].raw_response))
+            self.assertEqual(results[0].state.suggestion, "Ask")
         finally:
             orch.shutdown()
 
