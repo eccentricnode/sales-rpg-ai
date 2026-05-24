@@ -17,7 +17,10 @@ COPY knowledge_base/ knowledge_base/
 COPY .env .
 
 # Install dependencies
-RUN pip install --upgrade pip &&     pip install fastapi uvicorn[standard] websockets python-dotenv jinja2 openai python-multipart
+RUN pip install --upgrade pip && \
+    pip install torch torchaudio --extra-index-url https://download.pytorch.org/whl/cpu && \
+    pip install fastapi uvicorn[standard] websockets python-dotenv jinja2 openai python-multipart \
+    faster-whisper numpy chromadb sentence-transformers soundfile
 
 # Expose port
 EXPOSE 8080

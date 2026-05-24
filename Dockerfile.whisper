@@ -1,0 +1,29 @@
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3 python3-pip python3-venv ffmpeg git build-essential python3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip3 install --upgrade pip setuptools wheel && \
+    pip3 install --timeout=120 --retries=5 \
+        --index-url https://download.pytorch.org/whl/cu124 \
+        torch torchaudio && \
+    pip3 install --no-cache-dir "whisperlivekit[whisper]"
+
+COPY whisper_patches/ /app/patches/
+
+VOLUME ["/root/.cache/huggingface/hub"]
+
+EXPOSE 9090
+
+ENTRYPOINT ["python3", "/app/patches/start_server.py", "--host", "0.0.0.0"]
+CMD ["--port", "9090", "--model", "small", "--lan", "en", "--pcm-input", "--backend-policy", "localagreement", "--beams", "1", "--buffer_trimming", "segment", "--buffer_trimming_sec", "15"]

@@ -1,0 +1,10 @@
+*.mp4
+test-transcript-*
+__pycache__/
+*.wav
+*.mp4
+*.srt
+.env
+*.gguf
+models/*
+!models/phi-3.5-mini.yaml

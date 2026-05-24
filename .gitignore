@@ -8,3 +8,5 @@ __pycache__/
 *.gguf
 models/*
 !models/phi-3.5-mini.yaml
+data/
+.ralph-runs/

@@ -1,0 +1,613 @@
+##
+## KubeCraft Sales Call Decision Tree
+## Source: 132 calls analyzed, 55 confirmed closes (75% close rate on known outcomes)
+## Generated: 2026-02-18
+##
+## Usage: The real-time coaching AI reads this alongside buyer_archetypes.yaml.
+##   - At each phase, it listens for signals and surfaces the next recommended move.
+##   - Archetype is detected in phases 2-3 and all subsequent moves adapt.
+##   - This file encodes what ACTUALLY closed deals — not theory.
+##
+
+#---
+
+##
+## CALL SEQUENCE (11 phases from close analysis)
+##
+
+call_sequence:
+
+  phase_1_open:
+    name: "Open"
+    timing: "0:00 – 0:02"
+    goal: "Build rapport. Confirm agenda. Don't pitch yet."
+    moves:
+      - "Greet by name"
+      - "Confirm they can talk (not in a bad time)"
+      - "One-line agenda: 'I want to understand your situation, and if it makes sense, show you what we do'"
+    signals_to_log: []
+    ai_coaching_note: "Low coaching needed here. Just listen."
+
+
+  phase_2_why_here:
+    name: "Why Here"
+    timing: "0:02 – 0:05"
+    goal: "Capture initial framing. Begin archetype detection."
+    anchor_question: "What's the main thing that motivated you to book this call today?"
+    secondary_question: "Can you tell me a bit about where you're at right now?"
+    listen_for:
+      pain_signals:
+        - "laid off"
+        - "unemployed"
+        - "been applying"
+        - "stuck"
+        - "scared"
+        - "bills"
+        - "family depending"
+        - "can't find a job"
+        - "washing out"
+        - "not getting interviews"
+      vision_signals:
+        - "level up"
+        - "curious about"
+        - "want to grow"
+        - "senior role"
+        - "remote work"
+        - "long-term"
+        - "I'm already working but"
+        - "I want to transition eventually"
+      crisis_signals:
+        - "desperate"
+        - "running out of savings"
+        - "visa issue"
+        - "urgent but broke"
+        - "BNPL or payment plan asked in first 3 minutes"
+      tire_kicker_signals:
+        - "just looking"
+        - "researching options"
+        - "comparing programs"
+        - "not sure yet"
+        - "no rush"
+    early_archetype_flag: >
+      If 2+ pain signals with no stability mention → flag PAIN_BUYER.
+      If employed + ambition language → flag VISION_BUYER.
+      If pain + financial hesitation immediately → flag CRISIS_BUYER.
+      If vague/guarded → flag TIRE_KICKER tentatively. Confirm in phase 3.
+
+
+  phase_3_pain_excavation:
+    name: "Pain Excavation"
+    timing: "0:05 – 0:15"
+    goal: "Go 3-5 layers deep. Surface the emotional truth. Confirm archetype."
+    rule: >
+      For PAIN_BUYER and CRISIS_BUYER: surface the real fear — financial, family, time.
+      For VISION_BUYER: surface the identity gap — who they are vs. who they want to be.
+      For TIRE_KICKER: surface urgency (or lack of it). DQ early if below 4/10.
+
+    questions_for_all:
+      - "How long have you been in this situation?"
+      - "What have you tried so far that hasn't worked?"
+
+    questions_by_archetype:
+      pain_buyer:
+        - "What happens if nothing changes in the next 6 months?"
+        - "How does your spouse/family feel about where things are at?"
+        - "You've applied to [X] jobs — what does that do to you emotionally?"
+        - "If you're still in this exact spot in 3 years, how do you feel about yourself?"
+        - "What's the real cost of staying stuck?"
+      vision_buyer:
+        - "You're stable right now — what's making you actually want to take the risk of changing?"
+        - "How long have you been thinking about this?"
+        - "What does landing that senior role do for you and your family long-term?"
+        - "What would it mean to you personally to make this transition?"
+        - "Is there a reason for this shift? What's prompting it NOW?"
+      crisis_buyer:
+        - "What does your financial situation look like right now honestly?"
+        - "What do you have available to invest in something like this?"
+        - "[Same pain excavation as pain_buyer after finances are understood]"
+      tire_kicker:
+        - "On a scale of 1-10, how urgent is making a change right now?"
+        - "What specifically made you book a call today vs. just doing research online?"
+      avoid_for_pain_buyer:
+        - "'Where do you see yourself in 5 years?' — too abstract, they cannot think that far"
+        - "Vision-based ROI math early — they are in survival mode, not investment mode"
+      avoid_for_vision_buyer:
+        - "Consequence stacking — they are not afraid of staying where they are"
+        - "Aggressive urgency language — reads as desperate and undermines trust"
+
+    archetype_confirmation_by_phase_3:
+      pain_buyer: "Pain language + urgency + no financial red flags yet"
+      vision_buyer: "Currently employed + ambition language + calm tone"
+      crisis_buyer: "Pain language + explicit financial constraint mentioned"
+      tire_kicker: "Vague answers + 1-4 on urgency scale"
+      convenience_buyer: "Business-like, knows what they want, asks practical questions early"
+
+
+  phase_4_technical_baseline:
+    name: "Technical Baseline"
+    timing: "0:15 – 0:20"
+    goal: "Understand where they're starting. Reveals program fit and their self-awareness."
+    questions:
+      - "How would you rate your Linux familiarity on a scale of 1 to 10?"
+      - "What about containers and Docker?"
+      - "And Kubernetes specifically?"
+    interpretation:
+      "1-3": "Complete beginner. Will need foundational path. Don't assume prior knowledge."
+      "4-6": "Intermediate. Standard entry point. Most common in closes."
+      "7-9": "Advanced. May want certification focus or senior-track framing."
+      "10":  "Rare. Usually a misaligned prospect or over-claiming."
+    coaching_note: >
+      Low scores (1-3) on Kubernetes are normal and NOT a barrier. Use it:
+      'That's exactly why structured mentorship beats self-study here.'
+      High scores are a re-framing opportunity:
+      'Even strong engineers often get stuck without production-grade project experience.'
+
+
+  phase_5_goals:
+    name: "Goals & Stakes"
+    timing: "0:20 – 0:25"
+    goal: "Connect to the stakes. Salary targets and timeline are close ammo."
+    questions:
+      - "What is your end goal for the next 6 to 12 months?"
+      - "What does landing that role do for you and your family?"
+      - "What are your salary expectations for that role?"
+    listen_for:
+      high_value_signals:
+        - Salary target $100K-$200K → note exactly, use in close ROI math
+        - 6-12 month timeline → good urgency signal
+        - Family mention → emotional stake, critical close ammo
+        - Specific role title (DevSecOps, SRE, Platform) → use in program framing
+      coaching_prompts_to_surface:
+        - "What would that income change in your life practically?"
+        - "Is there a family situation that makes this more urgent? (surface only if signals present)"
+
+
+  phase_6_blocker:
+    name: "Blocker Surfacing"
+    timing: "0:25 – 0:28"
+    goal: "Surface objections BEFORE the pitch. Handle them here, not at the close."
+    questions:
+      - "What's holding you back from doing this on your own?"
+      - "What have you tried that hasn't worked?"
+    listen_for:
+      money_concern:
+        signal: "Mentions cost, savings, or finances in response"
+        action: "Lead with payment options in Phase 11 close. Don't wait for price objection."
+      spouse_approval:
+        signal: "Mentions needing to check with wife/partner"
+        action: >
+          Surface this NOW: 'Is there any way to get your spouse on a quick call right now?
+          I want them to have the full picture too — it takes 3 minutes.'
+          DO NOT leave spouse objection for close time.
+      self_doubt:
+        signal: "Questions whether they can learn this"
+        action: "Address with success evidence (Misha story, recent student wins). Specific names."
+      time_concern:
+        signal: "Mentions they don't have enough time"
+        action: "Quantify time commitment. Ask about their current week."
+
+
+  phase_7_now_tiedown:
+    name: "NOW Tie-Down"
+    timing: "0:28 – 0:30"
+    goal: "Commitment test before pitch. Gates the call."
+    questions:
+      - "Is this a NOW thing for you, or are you still exploring?"
+      - "On a scale of 1-10, how ready are you to make a change if the program is the right fit?"
+    scoring:
+      "8-10": "Proceed to pitch. They're in."
+      "5-7":  "Dig in: 'What would make you a 9?' — surface the remaining blocker."
+      "1-4":  >
+        Tire kicker. Options:
+        (a) DQ: 'Sounds like the timing isn't quite right — when do you think that changes?'
+        (b) BAMFAM: Book a specific follow-up date. Don't pitch today.
+    coaching_note: >
+      This is a gate, not a formality. If they're at a 5 or below without a clear reason,
+      pitching is wasted energy. Resolve the 5 first.
+
+
+  phase_8_pre_pitch_bridge:
+    name: "Pre-Pitch Bridge"
+    timing: "0:30 – 0:33"
+    goal: "Transition from pain to solution. Don't start pitching yet — build the bridge."
+    moves:
+      - "Mirror their pain back using their EXACT words from discovery"
+      - "Name the gap: where they are vs. where they could be"
+      - "Transition line: 'Let me show you what we've built for exactly this situation...'"
+    example_bridges:
+      pain_buyer: >
+        'You told me you've been applying for 8 months and it's costing you [their words].
+        That's not a luck problem — that's a skill gap problem. Let me show you what
+        engineers who were exactly where you are did to break through...'
+      vision_buyer: >
+        'You said you want to be a senior DevOps engineer within 18 months, working remotely,
+        at $150K. The gap between where you are and that isn't time — it's structured
+        real-world experience. Let me show you what we built for that...'
+
+
+  phase_9_pitch:
+    name: "Pitch — KubeCraft OS"
+    timing: "0:33 – 0:43"
+    goal: "Present the 5-component system. Customize by archetype."
+    components:
+      - "Live lab environment (hands-on production projects, not tutorial content)"
+      - "Mentorship and coaching access (direct access to Austin)"
+      - "Community (peer learning, accountability partners)"
+      - "Structured curriculum (Linux → containers → Kubernetes → CKA-ready)"
+      - "Capstone/internship project (portfolio-grade, deployable)"
+    pitch_by_archetype:
+      pain_buyer:
+        lead_with: "Speed and structure"
+        frame: >
+          'You can't job-search your way out of a skill gap. You can study your way out of it —
+          but only if the path is right. Here's the system that gets engineers from [their level]
+          to hired in [realistic timeframe].'
+        emphasis: ["Lab environment", "Mentorship speed", "Job placement focus"]
+      vision_buyer:
+        lead_with: "Destination and identity"
+        frame: >
+          'This isn't a course. This is the infrastructure that gets you from
+          where you are to [their stated role]. Here's how engineers who made
+          exactly this transition did it...'
+        emphasis: ["Capstone project", "Senior-track curriculum", "Community of high-level peers"]
+      crisis_buyer:
+        lead_with: "Affordability and access"
+        frame: >
+          'Before we get into the investment — let me show you what the program does first,
+          and then we'll find a way to make it work financially.'
+        emphasis: ["Results speed", "Payment flexibility", "ROI math"]
+      convenience_buyer:
+        lead_with: "Efficiency and deliverables"
+        frame: >
+          'Here's what's included, how it's structured, and what you're getting.
+          Most people in your situation go [track X].'
+        emphasis: ["Curriculum clarity", "Timeline", "What they get vs. self-study"]
+
+
+  phase_10_temp_check:
+    name: "Temperature Check"
+    timing: "0:43 – 0:45"
+    goal: "Get gut check BEFORE revealing price. Don't price-dump."
+    questions:
+      - "On a scale of 1-10, how does this feel as a fit for where you're at?"
+    scoring:
+      "7-10": "Proceed to price reveal."
+      "5-6":  "'What's keeping you from a 9?' — surface the hidden objection before pricing."
+      "<5":   "'Sounds like this might not be the right fit — what would need to be different?'"
+    coaching_note: >
+      A 5 or 6 here is NOT a bad sign if you can surface the reason.
+      A 5 after a great pitch usually means an unexpressed objection (usually money or spouse).
+      Get it on the table before the price reveal.
+
+
+  phase_11_close:
+    name: "Close"
+    timing: "0:45 – end"
+    goal: "Price reveal, payment options, handle objections using their own words."
+    price_reveal_sequence:
+      step_1: "Present investment: state it clearly, don't apologize"
+      step_2: "Present payment options (full / 3-month / BNPL if available)"
+      step_3: "Silence after presenting — don't fill the gap"
+
+    close_by_archetype:
+      pain_buyer:
+        technique: "Consequence stack with their own words"
+        script: >
+          'You said [their exact pain quote]. You said [their exact fear].
+          The question isn't whether you can afford this — it's whether you can afford
+          to wait another 3 months while [their stated consequence] keeps happening.'
+        payment_approach: "Lead with payment plan. Offer deposit to get started if needed."
+        avoid: "Long silence after price reveal. Be ready with payment option immediately."
+
+      vision_buyer:
+        technique: "Vision ROI — make the math real"
+        script: >
+          'You said you want to be at [$X] in [their timeline].
+          At $3,500, if this program gets you there 12 months faster than self-study —
+          what's that worth? The investment pays for itself in [X] weeks at that salary.'
+        payment_approach: "Full price framing. Payment plans available but don't lead with them."
+        avoid: "Urgency pressure — they're not afraid of staying where they are."
+
+      crisis_buyer:
+        technique: "Affordable path or ethical DQ"
+        script: >
+          'We have a few ways to make this work. [BNPL option]. [Deposit + payments option].
+          Let me show you what's possible.'
+        payment_approach: "BNPL first. Deposit + payments second. Ethical DQ if neither works."
+        avoid: "Pressuring someone who genuinely cannot afford it."
+
+    objection_handling:
+      money:
+        signal: "'I don't have the money right now' / 'It's too expensive'"
+        response: "Lead immediately to payment plan. Don't flinch."
+        script: "'Most people don't pay full price. What would make this work for you financially?'"
+        follow_up: >
+          If they still can't make minimum deposit work → ethical DQ:
+          'I don't want to put you in a worse situation. Let me give you the free community
+          access and we can revisit in [X] months when the timing works better.'
+
+      spouse:
+        signal: "'I need to check with my wife/partner'"
+        response: >
+          If surfaced in Phase 6: already handled.
+          If it appears HERE for the first time: you missed it in Phase 6.
+          'Let's get them on a quick call right now. 3 minutes. I want to make sure they
+          have the full picture so they can support the decision.'
+        avoid: "'Go talk to them and come back' — this kills the close."
+
+      think_about_it:
+        signal: "'Let me think about it' / 'I need some time'"
+        response: "Use their own tie-down against the delay."
+        script: >
+          'You told me this was a NOW thing for you. What changed in the last 5 minutes?
+          Usually when people say they need to think, there's something specific holding them back.
+          What is it?'
+
+      not_the_right_time:
+        signal: "'The timing isn't great right now'"
+        response: "Make inaction concrete."
+        script: "'When IS the right time? What would need to be different for this to make sense?'"
+
+      job_placement_guarantee:
+        signal: "'Can you guarantee I'll get a job?'"
+        response: "Be honest. Don't oversell."
+        script: >
+          'We can't guarantee placement — no honest program can. What we can show you
+          is [specific student results]. The path works. The variable is the work you put in.'
+
+#---
+
+##
+## CLOSE TRIGGERS (signals that consistently appeared at close moment)
+##
+
+close_triggers:
+  universal:
+    - "Temp check 7+ after pitch"
+    - "Prospect uses 'when I start' language (not 'if')"
+    - "Asks about payment options or next steps unprompted"
+    - "Rates program fit 8-10 without being asked"
+    - "Asks follow-up questions about curriculum or schedule"
+
+  pain_buyer_specific:
+    - "Acknowledges skill gap is the REAL problem (not luck)"
+    - "Mentions family/spouse stake in the outcome explicitly"
+    - "Says 'I need to do something' or 'I can't keep going like this'"
+
+  vision_buyer_specific:
+    - "Names specific role title or salary number"
+    - "Has a self-imposed timeline ('I want to do this by X')"
+    - "Has done research before the call (YouTube, self-studying already)"
+
+  action_on_trigger: >
+    When you hear a close trigger → move to price reveal immediately.
+    Don't extend the call. Don't keep discovery-ing.
+    'Let me tell you about the investment side, and then we can figure out if it makes sense.'
+
+#---
+
+##
+## LOSS PATTERNS (from 18 confirmed losses)
+##
+
+loss_patterns:
+  primary_cause: "Financial — unable to afford at any payment structure (~80% of losses)"
+  loss_types:
+    - type: "Financial — can't afford minimum payment"
+      count: 12
+      examples:
+        - "Jody Koewe (financial challenges)"
+        - "Noor Latif (financial constraints)"
+        - "Hary Setiawan ($3,500 too high)"
+        - "Bogdan Shchavinskyi (payment not feasible)"
+        - "Vishnu Das (dynamic schedule + financial)"
+        - "Cee Lucas (can't reach feasible arrangement)"
+      response: >
+        Ethical DQ. Offer free community access.
+        'I don't want to put you in a harder position. Here's where you can start for free...'
+
+    - type: "Wrong fit — goals don't match offer"
+      count: 3
+      examples:
+        - "Tim Zhou (already too senior — high-level needs)"
+        - "Sam O (goals didn't match CubeCraft)"
+        - "Oluwakemi Adeniyi (goals misaligned)"
+      response: >
+        DQ clearly and early. Don't pitch to misaligned prospects.
+        Better to end at minute 15 than close someone who churns.
+
+    - type: "Timing — not now but not never"
+      count: 2
+      examples:
+        - "Harsh Singhal (travel and family constraints)"
+        - "Samuel Jesse (plans to join in 6 months)"
+      response: "BAMFAM with a firm date. Add to nurture. Don't re-pitch on same call."
+
+    - type: "Trust/logistics breakdown"
+      count: 1
+      examples:
+        - "John Chrey (frustrated with call logistics)"
+      response: "Own the failure. Apologize specifically. Reschedule clean."
+
+  key_insight: >
+    80% of losses are financial — NOT disinterest, NOT wrong fit.
+    Most lost prospects WANTED the program. The barrier was affordability.
+    Implication: having BNPL and creative payment options available reduces losses significantly.
+
+#---
+
+##
+## ARCHETYPE CLOSE RATES (from 132-call analysis)
+##
+
+archetype_close_rates:
+  pain_buyer:
+    close_rate: "49%"
+    closes: 36
+    total_calls: 74
+    avg_detection_timing: "3–5 minutes into call"
+    key_insight: >
+      Highest volume archetype. Close rate is solid but not exceptional because
+      financial objections appear often (it's the same profile that loses too).
+      Lead with payment options preemptively — don't wait for the objection.
+
+  vision_buyer:
+    close_rate: "50%"
+    closes: 17
+    total_calls: 34
+    avg_detection_timing: "5–12 minutes in (takes longer to reveal)"
+    key_insight: >
+      Equal close rate to pain buyers but smaller volume.
+      Calls run longer because vision buyers need more trust-building.
+      Don't rush these calls. Longer discovery = higher close.
+
+  crisis_buyer:
+    close_rate: "50%"
+    closes: 2
+    total_calls: 4
+    avg_detection_timing: "Early — financial hesitation surfaces fast"
+    note: "Small sample. Ethical screen is more important than close rate here."
+
+  unclear_undetected:
+    close_rate: "0%"
+    closes: 0
+    total_calls: 20
+    key_insight: >
+      If you can't detect an archetype by minute 10, urgency is probably low.
+      DQ or BAMFAM. Unclear archetype = unclear motivation = no close.
+
+#---
+
+##
+## TOP DISCOVERY QUESTIONS FROM CLOSES
+## Ranked by frequency across 55 confirmed closes
+##
+
+top_discovery_questions:
+  tier_1_universal_openers:
+    - question: "What's the main thing that motivated you to book this call today?"
+      appears_in: "Nearly all closes — universal opener"
+      purpose: "Initial framing. Archetype detection. Sets tone."
+      when: "Phase 2 — first 2-3 minutes"
+
+    - question: "can you kind of just walk me through why you decided to book the call with us today?"
+      appears_in: "Multiple closes (Derrick Gill, Jeroen Hammega)"
+      purpose: "Same as above — conversational variant"
+      when: "Phase 2"
+
+  tier_2_high_frequency:
+    - question: "What challenges are you facing in your current role?"
+      frequency: 3
+      archetypes: ["pain_buyer"]
+      when: "Phase 3 — pain excavation"
+
+    - question: "What is your end goal for the next 6 to 12 months?"
+      frequency: 2
+      archetypes: ["vision_buyer", "pain_buyer"]
+      when: "Phase 5 — goals"
+
+    - question: "What are your salary expectations?"
+      frequency: 2
+      archetypes: ["pain_buyer"]
+      when: "Phase 5 — goals. Critical for close ROI math."
+
+    - question: "What challenges are you facing in your job search?"
+      frequency: 2
+      archetypes: ["pain_buyer", "crisis_buyer"]
+      when: "Phase 3"
+
+    - question: "What are your current career goals?"
+      frequency: 2
+      archetypes: ["pain_buyer"]
+      when: "Phase 3-5"
+
+  tier_3_effective_situational:
+    - question: "How would you rate your Linux/Docker/Kubernetes familiarity on a scale of 1 to 10?"
+      appears_in: "Most closes"
+      when: "Phase 4 — technical baseline"
+
+    - question: "What's holding you back from doing this on your own?"
+      appears_in: "Blocker surfacing — high value"
+      when: "Phase 6"
+
+    - question: "Is this a NOW thing for you?"
+      appears_in: "Tie-down"
+      when: "Phase 7"
+
+    - question: "What motivates you to transition to DevOps specifically?"
+      appears_in: "2 closes"
+      when: "Phase 3 — confirm domain commitment"
+
+    - question: "Is there a reason for this shift? What's prompting this?"
+      appears_in: "2 closes (Scott Medway, others)"
+      when: "Phase 3 — especially for vision buyers"
+
+    - question: "What are your immediate goals for the next three to six months?"
+      appears_in: "2 closes"
+      archetypes: ["pain_buyer"]
+      when: "Phase 5 — urgency variant"
+
+  questions_to_avoid_in_closes:
+    - question: "Where do you see yourself in 5 years?"
+      reason: "Too abstract for pain buyers. Vision buyers answer vaguely. Use 6-12 month instead."
+    - question: "What did you think of the program?"
+      reason: "Too passive. Use temp check scale (1-10) instead."
+    - question: "Does that make sense?"
+      reason: "Invites 'yes' without commitment. Use temp check instead."
+
+#---
+
+##
+## REAL-TIME AI COACHING SIGNALS
+## Maps what the coaching system should listen for → recommended move
+##
+
+ai_realtime_signals:
+  early_archetype_detection:
+    - signal: "Prospect mentions layoff or months unemployed"
+      action: "Flag PAIN_BUYER. Surface: 'How long has this been going on?'"
+
+    - signal: "Prospect says they're currently employed and want to grow"
+      action: "Flag VISION_BUYER. Surface: 'What's prompting the change NOW specifically?'"
+
+    - signal: "Prospect asks about payment plans in first 3 minutes"
+      action: "Flag CRISIS_BUYER. Qualify finances in Phase 3 before going deeper."
+
+    - signal: "Prospect gives vague answer to 'why did you book today'"
+      action: "Flag TIRE_KICKER tentative. Ask urgency 1-10 scale immediately."
+
+  close_readiness_signals:
+    - signal: "Prospect uses 'when I start' or 'when I join'"
+      action: "Move to close immediately. Don't delay."
+
+    - signal: "Prospect asks 'what happens next' or 'how do I get started'"
+      action: "Close trigger. Transition to price reveal."
+
+    - signal: "Prospect rates program fit 8+ unprompted"
+      action: "Close trigger. Don't keep pitching."
+
+    - signal: "Prospect asks detailed follow-up questions about curriculum"
+      action: "Buying interest signal. Move to temp check."
+
+  danger_signals:
+    - signal: "Prospect says 'let me think about it' at close"
+      action: "Use tie-down: 'You said this was a NOW thing. What changed?'"
+
+    - signal: "Spouse mentioned for first time at price reveal"
+      action: "Missed it in Phase 6. Offer 3-minute spouse call right now."
+
+    - signal: "Prospect silent after price reveal for more than 8 seconds"
+      action: "Let them think. Don't fill the silence."
+
+    - signal: "Prospect mentions financial hardship at close"
+      action: "Move to payment plan immediately. Don't defend the price."
+
+  disqualify_signals:
+    - signal: "Urgency scale 1-4 with no clear reason to change"
+      action: "DQ or BAMFAM. Do not pitch."
+
+    - signal: "Goals clearly misaligned with KubeCraft offering"
+      action: "DQ early. Better a short call than a refund request."
+
+    - signal: "Cannot meet minimum payment under any structure"
+      action: "Ethical DQ. Free community referral."

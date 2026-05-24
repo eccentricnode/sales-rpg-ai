@@ -1,17 +1,17 @@
-import unittest
 import json
-from unittest.mock import MagicMock, patch
-from validation.script_tester import ScriptTester
-
 import os
+import unittest
+from unittest.mock import MagicMock
+
+from src.validation.script_tester import ScriptTester
+
 
 class TestScriptTester(unittest.TestCase):
     def setUp(self):
         self.db_path = "test_script_tester.db"
         self.tester = ScriptTester(db_path=self.db_path)
-        # Mock the analyzer to avoid real API calls
-        self.tester.analyzer = MagicMock()
-        self.tester.analyzer.model = "test-model"
+        # Mock the LLM boundary to avoid real API calls.
+        self.tester._call_llm = MagicMock()
 
     def tearDown(self):
         if os.path.exists(self.db_path):
@@ -27,35 +27,27 @@ class TestScriptTester(unittest.TestCase):
 
     def test_test_with_snippet(self):
         # Mock response
-        mock_response = json.dumps({
-            "stage": "Opening",
-            "tie_downs": [],
-            "flags": [],
-            "suggestion": "Say hello"
-        })
-        self.tester.analyzer.analyze.return_value = mock_response
-        
+        mock_response = json.dumps({"stage": "Opening", "tie_downs": [], "flags": [], "suggestion": "Say hello"})
+        self.tester._call_llm.return_value = mock_response
+
         result = self.tester.test_with_snippet("Hello there")
         self.assertEqual(result["stage"], "Opening")
-        self.tester.analyzer.analyze.assert_called_once()
+        self.tester._call_llm.assert_called_once()
 
     def test_full_workflow(self):
         # 1. Save Call
         call_id = self.tester.save_call("Test Call", "Transcript content")
         self.assertIsNotNone(call_id)
-        
+
         # 2. Run Analysis
-        mock_response = json.dumps({
-            "stage": "Discovery",
-            "tie_downs": ["Right?"],
-            "flags": [],
-            "suggestion": "Ask about budget"
-        })
-        self.tester.analyzer.analyze.return_value = mock_response
-        
+        mock_response = json.dumps(
+            {"stage": "Discovery", "tie_downs": ["Right?"], "flags": [], "suggestion": "Ask about budget"}
+        )
+        self.tester._call_llm.return_value = mock_response
+
         run_id = self.tester.run_analysis(call_id)
         self.assertIsNotNone(run_id)
-        
+
         # 3. Get Results
         results = self.tester.get_results()
         self.assertEqual(len(results), 1)
@@ -63,5 +55,6 @@ class TestScriptTester(unittest.TestCase):
         self.assertTrue(results[0].passed)
         self.assertIn("Discovery", results[0].notes)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

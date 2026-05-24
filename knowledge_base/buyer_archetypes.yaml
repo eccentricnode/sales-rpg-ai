@@ -1,0 +1,239 @@
+##
+## Sales RPG — Buyer Archetype Profiles
+## Extracted from: Austin's Sales Playbook (Oct 2025 – Feb 2026)
+## Source: 40+ coaching sessions, 30 call transcripts, $136.6K closed
+##
+## Usage: At runtime, the AI reads this file alongside the sales script.
+## Detect archetype in Part 3-4 (Why They're Here / Examine Pain).
+## All subsequent suggestions adapt to the detected archetype.
+##
+
+archetypes:
+
+  pain_buyer:
+    name: "Pain Buyer"
+    description: >
+      Prospect is in genuine distress — laid off, broke, family pressure,
+      running out of time. They came to the call because they NEED to solve
+      this now, not because they want to. Urgency is real, not manufactured.
+    detection_signals:
+      - "Just got laid off" or "been unemployed for X months"
+      - Mentions financial pressure, bills, family concern
+      - Applied to hundreds of jobs with no results
+      - Expresses fear or shame about current situation
+      - "My wife is worried" / "I have kids depending on me"
+      - Tone: deflated, anxious, or urgently hopeful
+    examples: ["Ryan Stush", "Doug", "Derrick Gill"]
+    close_rate: "Highest — closes fast if you don't oversell"
+
+    discovery_approach:
+      priority_questions:
+        - "How long have you been in this situation?"
+        - "What happens if nothing changes in the next 6 months?"
+        - "How does your spouse feel about this?"
+        - "300 applications and no results — how does that FEEL?"
+        - "If you're still here in 3 years, how do you feel about yourself?"
+      avoid:
+        - Vision-based questions ("where do you see yourself?") — they can't think that far
+        - ROI math early — they're in survival mode, not investment mode
+      goal: >
+        Go 5 layers deep on pain. Surface the emotional truth (fear, shame,
+        family impact). Make inaction feel more expensive than action.
+
+    close_approach:
+      primary_trigger: "Escape / relief from pain"
+      technique: "Consequence stacking — use their own pain against delay"
+      key_moves:
+        - Use their exact words from discovery as ammunition in the close
+        - "You said you don't want to be fixing printers in 20 years — how does waiting help that?"
+        - Lead with payment plan options proactively (they may have money issues)
+        - Deposit push if they won't commit full amount
+      avoid:
+        - Long pitches — they want a solution, not a tour
+        - Manufacturing urgency — their urgency is real, don't undermine it with fake scarcity
+
+    objection_patterns:
+      money: "Most common. Go straight to payment plan. If they won't do $200 deposit, call it out."
+      spouse: "Surface early in Part 4. Handle wife's objection during discovery."
+      think_about_it: "Call it out immediately. 'You said NOW. What changed in the last 5 minutes?'"
+
+
+  vision_buyer:
+    name: "Vision Buyer"
+    description: >
+      Prospect is employed and stable but wants something better. They're not
+      in pain — they're ambitious. They came because they want to grow, not
+      because they're stuck. Urgency is lower. Close takes longer.
+    detection_signals:
+      - Currently employed in a stable role
+      - "I just want to level up" or "I'm curious about DevOps"
+      - No financial pressure mentioned
+      - Talks about 2-5 year goals, not immediate need
+      - Tone: calm, curious, professional
+    examples: ["Scott Medway", "Marton"]
+    close_rate: "Moderate — takes longer, needs identity-level questions"
+
+    discovery_approach:
+      priority_questions:
+        - "What would be different about your life in the role you're describing?"
+        - "You're comfortable now — what's making you want to take the risk of changing?"
+        - "How long have you been thinking about this?"
+        - "What does landing that role do for you and your family long-term?"
+        - "What would it mean to you personally to make this transition?"
+      avoid:
+        - Consequence stacking — they're not afraid of staying where they are
+        - Aggressive urgency — it reads as desperate and undermines trust
+      goal: >
+        Connect to identity and aspiration. Make the vision vivid and personal.
+        The pain isn't where they are — it's the gap between where they are
+        and who they could become.
+
+    close_approach:
+      primary_trigger: "Identity / aspiration — sell the destination"
+      technique: "Vision-based ROI — make the future feel real and achievable"
+      key_moves:
+        - "You said you want to be at $X in 2 years. What's the cost of waiting another year?"
+        - Make them picture the role, the comp, the lifestyle difference
+        - Longer discovery is okay — they need to feel understood before they buy
+      avoid:
+        - Rushing to the pitch
+        - Talking about urgent need they don't have
+        - Payment plans as the primary framing (they usually can afford it)
+
+
+  convenience_buyer:
+    name: "Convenience Buyer"
+    description: >
+      Prospect knows what they want and has the money. They came to get it
+      done efficiently. They're not in pain and not particularly aspirational
+      — they just don't want to do the manual work themselves. The sale is
+      about removing friction and proving you can deliver.
+    detection_signals:
+      - Clear about what they want immediately ("I want the done-for-you option")
+      - No emotional language — business-like tone
+      - Has done research before the call
+      - Asks specific, practical questions about the process
+      - Money is not the objection — clarity and confidence in delivery is
+    examples: ["Eduardo (CE)", "clients who lead with 'tell me about the program'"]
+    close_rate: "High IF you can give them clean options. Drops if you're unprepared."
+
+    discovery_approach:
+      priority_questions:
+        - "What specifically are you looking for in this engagement?"
+        - "What's your timeline?"
+        - "What would make this a no-brainer for you?"
+      avoid:
+        - Long pain excavation — they'll get frustrated
+        - "How does that make you feel?" — they didn't come for therapy
+        - Questions designed for pain buyers
+      goal: >
+        Qualify fast. Confirm they fit the offer. Give them clear options
+        with clean pricing. If they don't qualify for what they want,
+        have a clear alternative ready before the call.
+
+    close_approach:
+      primary_trigger: "Clarity + confidence in delivery"
+      technique: "Remove friction — give them the clear path and step back"
+      key_moves:
+        - Know your offers cold before the call (never say 'let me check with my boss')
+        - If they don't qualify for DFY, have DWY pivot language ready
+        - Price objections are rare — vagueness and unpreparedness kill this sale
+      avoid:
+        - Over-explaining features they didn't ask about
+        - Manufacturing urgency
+        - Saying 'let me talk to my boss' — destroys authority instantly
+
+
+  crisis_buyer:
+    name: "Crisis Buyer"
+    description: >
+      Prospect is in genuine distress AND has limited funds. High emotional
+      urgency, low financial capacity. High ethical responsibility here —
+      don't sell someone something that will make their situation worse.
+      Requires careful navigation.
+    detection_signals:
+      - Emotional urgency similar to Pain Buyer
+      - BUT: mentions financial constraints directly ("I don't have much saved")
+      - May be between jobs, recently laid off, burning savings
+      - Asks about payment plans early
+      - May be looking for a miracle, not a program
+    examples: ["Derrick (BNPL discussion)", "Kasiet"]
+    close_rate: "Low-medium — only close if they can genuinely afford it"
+
+    discovery_approach:
+      priority_questions:
+        - "What does your financial situation look like right now?"
+        - "What do you have available to invest in this?"
+        - Pain questions same as Pain Buyer
+      goal: >
+        QUALIFY FINANCES EARLY. If they genuinely cannot afford it without
+        creating hardship, refer them to a free alternative or DQ with respect.
+        A close that bankrupts the client is not a win.
+
+    close_approach:
+      primary_trigger: "Affordable path to relief"
+      technique: "BNPL / deposit + payment plan, or ethical DQ"
+      key_moves:
+        - BNPL option if available
+        - Deposit to lock price, payments to follow
+        - If minimum payment is genuinely out of reach: DQ gracefully
+      avoid:
+        - Pressuring someone who can't afford it
+        - Ignoring financial red flags to hit a commission
+
+
+  tire_kicker:
+    name: "Tire Kicker"
+    description: >
+      Prospect has no real urgency. They're comparing options, doing research,
+      or just curious. They will not buy on this call and possibly not at all.
+      The correct move is to disqualify fast and not waste energy.
+    detection_signals:
+      - "I'm just looking into my options"
+      - "I have plenty of time, no rush"
+      - Guarded, won't share real information
+      - Gives vague answers to pain questions
+      - Already interviewing everywhere / comparing multiple programs
+      - Tone: detached, browsing
+    examples: ["CJ", "Amzou", "prospects who won't answer discovery questions directly"]
+    close_rate: "Low — DQ by minute 8-10"
+
+    discovery_approach:
+      priority_questions:
+        - "What specifically made you book a call today vs. just doing research online?"
+        - "On a scale of 1-10, how urgent is making a change right now?"
+      goal: >
+        Surface urgency (or lack of it) in the first 8 minutes.
+        If they're a 3 or below on urgency with no compelling reason,
+        politely end the call and preserve your energy.
+
+    close_approach:
+      primary_trigger: "None this call"
+      technique: "BAMFAM — Book A Meeting From A Meeting"
+      key_moves:
+        - If they're a 4-5 on urgency: plant seeds, BAMFAM with a follow-up date
+        - If below 4: "It sounds like the timing isn't right — when do you think that would change?"
+        - Do not pitch. Do not close. It won't work.
+      avoid:
+        - 45-minute calls with no buying signal
+        - Pitching to someone who won't share their situation
+
+
+##
+## Real-Time Detection Guide
+##
+## At Part 3 (Why They're Here), listen for:
+##   → Pain language + urgency = PAIN_BUYER
+##   → Ambition language + stability = VISION_BUYER
+##   → Direct/practical + knows what they want = CONVENIENCE_BUYER
+##   → Pain language + financial hesitation = CRISIS_BUYER
+##   → Vague + guarded + "just looking" = TIRE_KICKER
+##
+## If archetype is unclear after Part 4, ask:
+##   "On a scale of 1-10, how urgent is making a change right now?"
+##   → 8-10 = Pain or Crisis Buyer
+##   → 5-7 = Vision Buyer
+##   → 1-4 = Tire Kicker
+##
+## Archetype can shift during the call. Update in real-time.
+##

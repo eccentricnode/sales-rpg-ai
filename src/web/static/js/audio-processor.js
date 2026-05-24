@@ -27,7 +27,7 @@ class AudioProcessor extends AudioWorkletProcessor {
 
     flush() {
         const data = this._buffer.slice(0, this._bytesWritten);
-        
+
         // Resample if necessary
         // sampleRate is a global variable in AudioWorkletScope
         let outputData = data;
@@ -35,9 +35,16 @@ class AudioProcessor extends AudioWorkletProcessor {
             outputData = this.resample(data, sampleRate, this.targetSampleRate);
         }
 
+        // Convert Float32 to Int16 (s16le) for WhisperLiveKit
+        const int16Data = new Int16Array(outputData.length);
+        for (let i = 0; i < outputData.length; i++) {
+            const s = Math.max(-1, Math.min(1, outputData[i]));
+            int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+
         // Send to main thread
-        this.port.postMessage(outputData, [outputData.buffer]);
-        
+        this.port.postMessage(int16Data, [int16Data.buffer]);
+
         this._bytesWritten = 0;
     }
 

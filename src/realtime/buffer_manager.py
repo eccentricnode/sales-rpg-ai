@@ -14,19 +14,19 @@ from typing import Callable, Optional
 class BufferConfig:
     """Configuration for dual buffer system."""
 
-    # Trigger thresholds
-    time_threshold_seconds: float = 3.0   # Reverted to fast response
-    min_completed_segments: int = 2       # Reverted to fast response
-    min_characters: int = 150             # Reverted to fast response
-    silence_threshold_seconds: float = 1.5 # Reverted to fast response
+    # Trigger thresholds — tuned for fast first suggestion
+    time_threshold_seconds: float = 2.0   # Trigger after 2s of accumulation
+    min_completed_segments: int = 2       # 2 completed segments triggers
+    min_characters: int = 80             # Lower char threshold for faster response
+    silence_threshold_seconds: float = 1.0 # Detect pauses faster
 
     # Context window
     context_window_seconds: float = 30.0
     max_context_segments: int = 20
 
     # Analysis behavior
-    include_incomplete_segment: bool = False
-    sentence_end_triggers: bool = True    # Re-enabled for responsiveness
+    include_incomplete_segment: bool = True   # Include partial segment for faster response
+    sentence_end_triggers: bool = True        # Trigger on sentence endings
 
 
 @dataclass
@@ -99,6 +99,9 @@ class DualBufferManager:
         # Track processed segment IDs to avoid duplicates
         self._processed_segment_keys: set[tuple[float, float]] = set()
 
+        # Track last incomplete text we already triggered on (avoid re-triggering same text)
+        self._last_triggered_incomplete_text: str = ""
+
     def on_transcript_chunk(self, text: str, segments: list) -> None:
         """
         Callback for WhisperLive transcription_callback.
@@ -141,15 +144,28 @@ class DualBufferManager:
         Returns:
             True if analysis should be triggered, False otherwise.
         """
-        # Don't trigger if active buffer is empty
+        config = self.config
+        now = time.time()
+        time_elapsed = now - self.last_analysis_time
+
+        # CASE 1: No completed segments but we have an incomplete segment
+        # This handles WhisperLive sending single segments that never "complete"
+        if not self.active_buffer and self.last_incomplete_segment:
+            # Only trigger if text is new (not already analyzed)
+            if self.last_incomplete_segment.text.strip() == self._last_triggered_incomplete_text:
+                return False
+            # Trigger after time threshold with incomplete segment
+            if time_elapsed >= config.time_threshold_seconds:
+                return True
+            return False
+
+        # CASE 2: No data at all
         if not self.active_buffer:
             return False
 
-        config = self.config
-        now = time.time()
+        # CASE 3: Normal flow — completed segments in active buffer
 
         # Condition 1: Time elapsed since last analysis
-        time_elapsed = now - self.last_analysis_time
         if time_elapsed >= config.time_threshold_seconds:
             return True
 
@@ -169,7 +185,6 @@ class DualBufferManager:
 
         # Condition 5: Silence detected (gap between segments)
         if self.last_incomplete_segment:
-            # Check gap between last completed and current incomplete
             if self.active_buffer:
                 last_completed_end = self.active_buffer[-1].end
                 current_start = self.last_incomplete_segment.start
@@ -185,15 +200,18 @@ class DualBufferManager:
 
         Returns:
             Tuple of (active_text, context_text) for analysis.
-            active_text: New content to analyze for objections
+            active_text: New content to analyze
             context_text: Previous content for LLM context
         """
         active_text = self._get_buffer_text(self.active_buffer)
         context_text = self._get_buffer_text(self.context_buffer)
 
-        # Optionally include incomplete segment
-        if self.config.include_incomplete_segment and self.last_incomplete_segment:
-            active_text += " " + self.last_incomplete_segment.text
+        # Include incomplete segment (critical when active buffer is empty)
+        if self.last_incomplete_segment:
+            if active_text:
+                active_text += " " + self.last_incomplete_segment.text
+            else:
+                active_text = self.last_incomplete_segment.text
 
         return active_text.strip(), context_text.strip()
 
@@ -213,9 +231,19 @@ class DualBufferManager:
         # Trim context buffer to window size
         self._trim_context_buffer()
 
+        # Prune processed keys to only those still in context buffer
+        # (prevents unbounded growth during long calls)
+        retained_keys = {(seg.start, seg.end) for seg in self.context_buffer}
+        self._processed_segment_keys = retained_keys
+
         # Reset active buffer
         self.active_buffer = []
-        
+
+        # Update analysis timing (MUST happen here, not inside _check_state_trigger,
+        # otherwise last_analysis_time never updates when no state callback is set,
+        # causing time threshold to fire on every chunk — LLM flooding bug)
+        self.last_analysis_time = time.time()
+
         # Check if we should trigger state analysis (Slow Loop)
         self._check_state_trigger()
 
@@ -231,12 +259,16 @@ class DualBufferManager:
                 self.on_state_analysis_ready(full_text)
                 self.last_state_analysis_time = time.time()
 
-        # Update timing
-        self.last_analysis_time = time.time()
-
     def _trigger_analysis(self) -> None:
         """Internal method to trigger analysis."""
         active_text, context_text = self.get_analysis_payload()
+
+        if not active_text:
+            return
+
+        # Track incomplete-only triggers to avoid re-triggering same text
+        if not self.active_buffer and self.last_incomplete_segment:
+            self._last_triggered_incomplete_text = self.last_incomplete_segment.text.strip()
 
         # Call the callback if provided
         if self.on_analysis_ready:
@@ -270,10 +302,12 @@ class DualBufferManager:
         """Reset all buffers and state."""
         self.active_buffer = []
         self.context_buffer = []
+        self.full_history = []
         self.last_incomplete_segment = None
         self.last_analysis_time = time.time()
         self.last_segment_end_time = 0.0
         self._processed_segment_keys = set()
+        self._last_triggered_incomplete_text = ""
 
 
 # Simple test

@@ -121,9 +121,28 @@ def analyze_objections(transcript: str, api_key: str = None) -> dict:
             "transcript": transcript
         }
 
-    # Initialize OpenAI client with OpenRouter endpoint
+    # Get LLM provider configuration
+    llm_provider = os.getenv("LLM_PROVIDER", "openrouter").lower()
+
+    # Configure based on provider
+    if llm_provider == "github":
+        base_url = "https://models.github.ai/inference"
+        model = os.getenv("GITHUB_MODEL", "gpt-4o-mini")
+        api_key = os.getenv("GITHUB_TOKEN")
+        if not api_key:
+            print("[ERROR] GITHUB_TOKEN not set. Set LLM_PROVIDER=github and GITHUB_TOKEN in .env")
+            return {"error": "No GitHub token", "transcript": transcript}
+    elif llm_provider == "openrouter":
+        base_url = "https://openrouter.ai/api/v1"
+        model = "meta-llama/llama-3.3-70b-instruct:free"
+        # api_key already set from parameter
+    else:
+        base_url = "https://openrouter.ai/api/v1"  # default
+        model = "meta-llama/llama-3.3-70b-instruct:free"
+
+    # Initialize OpenAI client
     client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
+        base_url=base_url,
         api_key=api_key,
     )
 
@@ -168,10 +187,10 @@ If NO objections found, respond with: "NO_OBJECTIONS_DETECTED"
 """
 
     try:
-        # Make API call (using free model)
-        print("[INFO] Calling OpenRouter API...")
+        # Make API call
+        print(f"[INFO] Calling {llm_provider.upper()} API ({model})...")
         response = client.chat.completions.create(
-            model="meta-llama/llama-3.3-70b-instruct:free",  # Free tier model
+            model=model,
             messages=[
                 {
                     "role": "user",
@@ -192,7 +211,8 @@ If NO objections found, respond with: "NO_OBJECTIONS_DETECTED"
             "success": True,
             "analysis": analysis,
             "transcript": transcript,
-            "model": "meta-llama/llama-3.3-70b-instruct:free"
+            "model": model,
+            "provider": llm_provider
         }
 
     except Exception as e:

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales AI - Full Transcript</title>
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <style>
+        body { padding: 2rem; }
+        .transcript-container { 
+            height: calc(100vh - 200px); 
+            overflow-y: auto;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .transcript-line {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .transcript-line:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .timestamp {
+            color: var(--text-muted);
+            font-size: 0.8em;
+            margin-right: 0.5rem;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--error);
+            margin-right: 8px;
+        }
+        .status-indicator.connected {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1>Full Transcript</h1>
+                <p>Live capture from current session.</p>
+            </div>
+            <div class="flex items-center">
+                <span id="status-dot" class="status-indicator"></span>
+                <span id="status-text" style="color: var(--text-muted);">Disconnected</span>
+            </div>
+        </header>
+
+        <div class="panel">
+            <div id="transcript" class="transcript-container">
+                <!-- Transcript lines will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const transcriptDiv = document.getElementById('transcript');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        let ws = null;
+
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/audio?role=monitor`;
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Live';
+                statusText.style.color = 'var(--success)';
+                console.log('Connected to transcript stream');
+            };
+
+            ws.onclose = () => {
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'Disconnected';
+                statusText.style.color = 'var(--text-muted)';
+                console.log('Disconnected. Reconnecting in 3s...');
+                setTimeout(connect, 3000);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'transcript') {
+                    appendTranscript(data);
+                } else if (data.type === 'reset') {
+                    transcriptDiv.innerHTML = '';
+                }
+            };
+        }
+
+        function appendTranscript(data) {
+            // Simple append for now. 
+            // In a production app, we might want to handle partial updates (is_final=false) 
+            // by updating the last line instead of appending new ones.
+            // But for this MVP, we'll just append final segments or update if we can identify them.
+            
+            // For simplicity in this view, we'll just append everything that comes in as a new line
+            // if it has substantial content.
+            if (!data.text || data.text.trim().length === 0) return;
+
+            const line = document.createElement('div');
+            line.className = 'transcript-line';
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            line.innerHTML = `
+                <span class="timestamp">[${time}]</span>
+                <span class="text">${data.text}</span>
+            `;
+            
+            transcriptDiv.appendChild(line);
+            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+        }
+
+        // Start connection
+        connect();
+    </script>
+</body>
+</html>
