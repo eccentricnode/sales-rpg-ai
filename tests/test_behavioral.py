@@ -797,6 +797,169 @@ class TestSummaryEngineBehavior(unittest.TestCase):
 
 
 # ──────────────────────────────────────────────────────────────
+# Context Engine Layer 2: Behavioral tests
+# ──────────────────────────────────────────────────────────────
+class TestContextEngineLayer2Behavior(unittest.TestCase):
+    """Hardly Selling methodology is retrievable as a second RAG source."""
+
+    def test_methodology_chunker_adds_source_metadata(self):
+        """Methodology chunks preserve source/section metadata for downstream prompts."""
+        from src.rag.chunker import chunk_methodology
+
+        chunks = chunk_methodology(str(project_root / "knowledge_base" / "hardly_selling_methodology.md"))
+
+        self.assertGreater(len(chunks), 0)
+        self.assertTrue(all(c["metadata"]["source"] == "hardly_selling_methodology" for c in chunks))
+        self.assertTrue(any(c["metadata"]["type"] == "methodology_phase" for c in chunks))
+        self.assertTrue(any("Problem Development" in c["metadata"]["section"] for c in chunks))
+
+    def test_retriever_queries_script_and_methodology_sources(self):
+        """ScriptRetriever queries added sources and returns source metadata from both layers."""
+        from src.rag.retriever import ScriptRetriever
+
+        class FakeDetector:
+            def detect(self, text, current_stage=None):
+                return None, 0.0
+
+            def get_part_number(self, stage):
+                return None
+
+        class FakeStore:
+            def __init__(self, result):
+                self.result = result
+                self.queries = []
+
+            def query(self, text, top_k=3, where=None):
+                self.queries.append((text, top_k, where))
+                return [self.result]
+
+        script_result = {
+            "id": "part_4_pain_problem",
+            "text": "Script discovery questions",
+            "metadata": {"source": "kubecraft_script", "section": "PART 4: Pain Problem"},
+            "distance": 0.2,
+        }
+        methodology_result = {
+            "id": "methodology_phase_3_problem_development",
+            "text": "Problem Development: go five levels deep",
+            "metadata": {"source": "hardly_selling_methodology", "section": "Phase 3: Problem Development"},
+            "distance": 0.4,
+        }
+        script_store = FakeStore(script_result)
+        methodology_store = FakeStore(methodology_result)
+
+        retriever = ScriptRetriever(script_store, FakeDetector(), chunks=[])
+        retriever.add_source(methodology_store)
+        results = retriever.retrieve_with_metadata(
+            "I feel stuck and frustrated with my current job search",
+            top_k=3,
+        )
+
+        sources = {r["metadata"]["source"] for r in results}
+        self.assertEqual(retriever.source_count, 2)
+        self.assertTrue(script_store.queries)
+        self.assertTrue(methodology_store.queries)
+        self.assertIn("kubecraft_script", sources)
+        self.assertIn("hardly_selling_methodology", sources)
+
+    def test_streaming_analyzer_init_rag_wires_methodology_source(self):
+        """Runtime RAG initialization adds the methodology store to ScriptRetriever."""
+        from src.realtime.analysis_orchestrator import StreamingAnalyzer
+
+        src_dir = str(project_root / "src")
+        if src_dir not in sys.path:
+            sys.path.insert(0, src_dir)
+
+        created_collections = []
+
+        class FakeStore:
+            def __init__(self, collection_name="sales_script", persist_dir=None):
+                self.collection_name = collection_name
+                self.persist_dir = persist_dir
+                self.chunks = []
+                created_collections.append(collection_name)
+
+            def add_chunks(self, chunks):
+                self.chunks.extend(chunks)
+
+            def count(self):
+                return len(self.chunks)
+
+        with (
+            patch(
+                "src.realtime.analysis_orchestrator.os.path.exists",
+                side_effect=lambda path: str(path).endswith("hardly_selling_methodology.md"),
+            ),
+            patch(
+                "rag.chunker.chunk_script",
+                return_value=[
+                    {
+                        "id": "script",
+                        "text": "script",
+                        "metadata": {"source": "kubecraft_script", "section": "Script"},
+                    }
+                ],
+            ),
+            patch(
+                "rag.chunker.chunk_methodology",
+                return_value=[
+                    {
+                        "id": "methodology",
+                        "text": "Discovery wins",
+                        "metadata": {"source": "hardly_selling_methodology", "section": "Universal Principles"},
+                    }
+                ],
+            ),
+            patch("rag.store.EmbeddingStore", FakeStore),
+        ):
+            analyzer = StreamingAnalyzer(api_key="test", base_url="http://fake", model="m")
+            analyzer._init_rag()
+
+        self.assertIn("sales_script", created_collections)
+        self.assertIn("hardly_selling_methodology", created_collections)
+        self.assertEqual(analyzer.retriever.source_count, 2)
+
+    def test_runtime_prompt_uses_source_metadata(self):
+        """RAG prompt includes source labels, not anonymous text blobs."""
+        from src.realtime.analysis_orchestrator import StreamingAnalyzer
+
+        class FakeRetriever:
+            def retrieve_with_metadata(self, active_text, context_text="", top_k=3):
+                return [
+                    {
+                        "id": "methodology_phase_3_problem_development",
+                        "text": "Problem Development: go five levels deep.",
+                        "metadata": {
+                            "source": "hardly_selling_methodology",
+                            "section": "Phase 3: Problem Development",
+                        },
+                    }
+                ]
+
+        chunk = MagicMock()
+        chunk.choices = [
+            MagicMock(
+                delta=MagicMock(
+                    content='{"script_location": "Problem Development", "key_points": [], "suggestion": "Go deeper"}'
+                )
+            )
+        ]
+
+        analyzer = StreamingAnalyzer(api_key="test", base_url="http://fake", model="m")
+        analyzer.retriever = FakeRetriever()
+        analyzer.client = MagicMock()
+        analyzer.client.chat.completions.create.return_value = iter([chunk])
+
+        analyzer.analyze("I feel stuck and frustrated")
+
+        messages = analyzer.client.chat.completions.create.call_args.kwargs["messages"]
+        system_prompt = messages[0]["content"]
+        self.assertIn("Source: hardly_selling_methodology", system_prompt)
+        self.assertIn("Section: Phase 3: Problem Development", system_prompt)
+        self.assertIn("go five levels deep", system_prompt)
+
+
+# ──────────────────────────────────────────────────────────────
 # RAG Integrity: Behavioral tests
 # ──────────────────────────────────────────────────────────────
 class TestRAGIntegrityBehavior(unittest.TestCase):

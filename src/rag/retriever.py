@@ -73,6 +73,11 @@ class ScriptRetriever:
         """
         self._extra_sources.append(source)
 
+    @property
+    def source_count(self) -> int:
+        """Return the number of embedding sources queried by this retriever."""
+        return 1 + len(self._extra_sources)
+
     def retrieve(
         self,
         active_text: str,
@@ -198,9 +203,7 @@ class ScriptRetriever:
     # Helpers
     # ------------------------------------------------------------------
 
-    def _get_adjacent_chunks(
-        self, part_number: int | None, window: int = 1
-    ) -> list[dict]:
+    def _get_adjacent_chunks(self, part_number: int | None, window: int = 1) -> list[dict]:
         """
         Return chunks from the current part and its neighbors.
 
@@ -213,9 +216,7 @@ class ScriptRetriever:
         if part_number is None:
             # Objection handling -- find chunks with objection-related sections.
             return [
-                chunk
-                for chunk in self.chunks
-                if "objection" in chunk.get("metadata", {}).get("section", "").lower()
+                chunk for chunk in self.chunks if "objection" in chunk.get("metadata", {}).get("section", "").lower()
             ]
 
         # Collect chunks whose part_number falls within [part - window, part + window].
@@ -243,9 +244,7 @@ class ScriptRetriever:
                 query = f"{query} {tail}"
         return query
 
-    def _safe_store_query(
-        self, text: str, top_k: int = 3, where: dict | None = None
-    ) -> list[dict]:
+    def _safe_store_query(self, text: str, top_k: int = 3, where: dict | None = None) -> list[dict]:
         """
         Query all registered embedding stores with error handling.
 
@@ -256,24 +255,48 @@ class ScriptRetriever:
         Returns an empty list if every store is unavailable or errors out,
         ensuring the retriever degrades gracefully.
         """
-        all_results: list[dict] = []
+        primary_results: list[dict] = []
+        extra_results_by_source: list[list[dict]] = []
 
         # Query primary store
         try:
-            all_results.extend(self.store.query(text, top_k=top_k, where=where))
+            primary_results = self.store.query(text, top_k=top_k, where=where)
         except Exception:
-            pass
+            primary_results = []
 
         # Query extra sources (methodology, etc.)
         for source in self._extra_sources:
             try:
-                all_results.extend(source.query(text, top_k=top_k, where=where))
+                extra_results_by_source.append(source.query(text, top_k=top_k, where=where))
             except Exception:
-                pass
+                extra_results_by_source.append([])
 
-        # Sort by distance (closest first) and return top_k
+        # Preserve source diversity: include the best result from each extra
+        # source before filling remaining slots by distance across all sources.
+        all_results = primary_results[:]
+        for source_results in extra_results_by_source:
+            all_results.extend(source_results)
         all_results.sort(key=lambda r: r.get("distance", float("inf")))
-        return all_results[:top_k] if len(all_results) > top_k else all_results
+
+        selected: list[dict] = []
+        for source_results in extra_results_by_source:
+            if len(selected) >= top_k:
+                break
+            if source_results:
+                source_results.sort(key=lambda r: r.get("distance", float("inf")))
+                selected.append(source_results[0])
+
+        seen_keys = {self._dedupe_key(result) for result in selected}
+        for result in all_results:
+            if len(selected) >= top_k:
+                break
+            key = self._dedupe_key(result)
+            if key not in seen_keys:
+                selected.append(result)
+                seen_keys.add(key)
+
+        selected.sort(key=lambda r: r.get("distance", float("inf")))
+        return selected[:top_k]
 
     @staticmethod
     def _deduplicate(chunks: list[dict]) -> list[dict]:
@@ -281,11 +304,17 @@ class ScriptRetriever:
         seen: set[str] = set()
         unique: list[dict] = []
         for chunk in chunks:
-            chunk_id = chunk.get("id", id(chunk))
+            chunk_id = ScriptRetriever._dedupe_key(chunk)
             if chunk_id not in seen:
                 seen.add(chunk_id)
                 unique.append(chunk)
         return unique
+
+    @staticmethod
+    def _dedupe_key(chunk: dict) -> str:
+        """Build a stable de-duplication key across multiple sources."""
+        source = chunk.get("metadata", {}).get("source", "unknown")
+        return f"{source}:{chunk.get('id', id(chunk))}"
 
 
 if __name__ == "__main__":

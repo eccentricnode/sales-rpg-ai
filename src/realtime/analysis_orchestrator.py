@@ -1,15 +1,16 @@
+import json
+import logging
 import os
 import queue
 import threading
 import time
-import json
-import logging
 from dataclasses import dataclass
-from typing import Callable, Optional, List
+from typing import Callable, Optional
 
 from openai import OpenAI
+
 from .models import ConversationState
-from .prompts import load_script, get_script_guidance_prompt, get_rag_guidance_prompt, get_recommendation_prompt
+from .prompts import get_rag_guidance_prompt, get_recommendation_prompt, get_script_guidance_prompt, load_script
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +20,13 @@ SCRIPT_CONTENT = load_script()
 # RAG toggle — set USE_RAG=true in .env to use retrieval-augmented prompts
 USE_RAG = os.getenv("USE_RAG", "false").lower() in ("true", "1", "yes")
 
+
 @dataclass
 class AnalysisRequest:
     active_text: str
     context_text: str
     timestamp: float
+
 
 @dataclass
 class AnalysisResult:
@@ -33,6 +36,7 @@ class AnalysisResult:
     latency_ms: float
     state: ConversationState
     error: Optional[str] = None
+
 
 class StreamingAnalyzer:
     def __init__(self, api_key: str, base_url: str, model: str, fallback_model: Optional[str] = None):
@@ -55,74 +59,124 @@ class StreamingAnalyzer:
         if no persisted store exists.
         """
         import sys
+
         # Ensure src/ is importable (needed when running from project root in Docker)
         src_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
         if src_dir not in sys.path:
             sys.path.insert(0, src_dir)
 
-        from rag.chunker import chunk_script
-        from rag.store import EmbeddingStore
-        from rag.stage_detector import StageDetector
+        from rag.chunker import chunk_methodology, chunk_script
         from rag.retriever import ScriptRetriever
+        from rag.stage_detector import StageDetector
+        from rag.store import EmbeddingStore
 
-        script_path = os.path.normpath(os.path.join(
-            os.path.dirname(__file__), "..", "..", "knowledge_base", "kubecraft_script.md"
-        ))
-        persist_dir = os.path.normpath(os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "chromadb"
-        ))
+        knowledge_base_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "knowledge_base"))
+        script_path = os.path.join(knowledge_base_dir, "kubecraft_script.md")
+        methodology_path = os.path.join(knowledge_base_dir, "hardly_selling_methodology.md")
+        persist_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "data", "chromadb"))
 
         # Always need chunks for the stage detector / retriever
         logger.info("RAG: Chunking sales script...")
         chunks = chunk_script(script_path)
         logger.info(f"RAG: {len(chunks)} chunks parsed")
+        methodology_chunks = []
+        if os.path.exists(methodology_path):
+            logger.info("RAG Layer 2: Chunking Hardly Selling methodology...")
+            methodology_chunks = chunk_methodology(methodology_path)
+            logger.info(f"RAG Layer 2: {len(methodology_chunks)} methodology chunks parsed")
+        else:
+            logger.warning("RAG Layer 2 disabled: %s not found", methodology_path)
 
         # Try loading pre-built embeddings from disk
         if os.path.exists(persist_dir):
-            store = EmbeddingStore(persist_dir=persist_dir)
+            store = EmbeddingStore(collection_name="sales_script", persist_dir=persist_dir)
             if store.count() > 0:
                 logger.info(f"RAG: Loaded {store.count()} pre-built embeddings from {persist_dir}")
             else:
                 logger.warning("RAG: Persist dir exists but empty — embedding in-memory")
-                store = EmbeddingStore()
+                store = EmbeddingStore(collection_name="sales_script")
                 store.add_chunks(chunks)
                 logger.info(f"RAG: {store.count()} chunks embedded (in-memory)")
         else:
-            logger.info("RAG: No pre-built store found — embedding in-memory (run `python src/rag/build.py` to persist)")
-            store = EmbeddingStore()
+            logger.info(
+                "RAG: No pre-built store found — embedding in-memory (run `python src/rag/build.py` to persist)"
+            )
+            store = EmbeddingStore(collection_name="sales_script")
             store.add_chunks(chunks)
             logger.info(f"RAG: {store.count()} chunks embedded (in-memory)")
 
         detector = StageDetector()
         self.retriever = ScriptRetriever(store, detector, chunks)
+        if methodology_chunks:
+            methodology_store = self._build_methodology_store(EmbeddingStore, methodology_chunks, persist_dir)
+            if methodology_store is not None:
+                self.retriever.add_source(methodology_store)
+                logger.info("RAG Layer 2: Hardly Selling methodology source enabled")
         logger.info("RAG: Pipeline ready")
+
+    def _build_methodology_store(self, store_cls, methodology_chunks: list[dict], persist_dir: str):
+        """Build or load the optional Hardly Selling methodology source."""
+        try:
+            if os.path.exists(persist_dir):
+                methodology_store = store_cls(
+                    collection_name="hardly_selling_methodology",
+                    persist_dir=persist_dir,
+                )
+                if methodology_store.count() == 0:
+                    methodology_store.add_chunks(methodology_chunks)
+            else:
+                methodology_store = store_cls(collection_name="hardly_selling_methodology")
+                methodology_store.add_chunks(methodology_chunks)
+            logger.info("RAG Layer 2: %s methodology chunks ready", methodology_store.count())
+            return methodology_store
+        except Exception as e:
+            logger.warning("RAG Layer 2 disabled: failed to initialize methodology source: %s", e)
+            return None
+
+    def _retrieve_context_sections(self, active_text: str, context_text: str, top_k: int = 3) -> list[str]:
+        """Retrieve RAG sections and preserve source metadata for prompts."""
+        if not self.retriever:
+            return []
+
+        if hasattr(self.retriever, "retrieve_with_metadata"):
+            sections = self.retriever.retrieve_with_metadata(active_text, context_text, top_k=top_k)
+            return [self._format_retrieved_section(section) for section in sections]
+
+        return self.retriever.retrieve(active_text, context_text, top_k=top_k)
+
+    @staticmethod
+    def _format_retrieved_section(section: dict) -> str:
+        """Render retrieved context with source metadata visible to the LLM."""
+        metadata = section.get("metadata", {})
+        source = metadata.get("source", "unknown")
+        title = metadata.get("section", section.get("id", "unknown"))
+        return f"[Source: {source} | Section: {title}]\n{section.get('text', '')}"
 
     def analyze(self, active_text: str, context_text: str = "") -> str:
         """Analyze text using streaming LLM responses for lower latency."""
         # Build user message with context if available
         if context_text:
-            user_message = f"<conversation_so_far>\n{context_text}\n</conversation_so_far>\n\n<latest>\n{active_text}\n</latest>"
+            user_message = (
+                f"<conversation_so_far>\n{context_text}\n</conversation_so_far>\n\n<latest>\n{active_text}\n</latest>"
+            )
         else:
             user_message = active_text
 
         # Build system prompt — RAG retrieves relevant sections per-request
         if self.retriever:
-            sections = self.retriever.retrieve(active_text, context_text, top_k=3)
+            sections = self._retrieve_context_sections(active_text, context_text, top_k=3)
             system_prompt = get_rag_guidance_prompt(sections)
         else:
             system_prompt = self.system_prompt
 
         response = self.client.chat.completions.create(
             model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}],
             max_tokens=500,
             temperature=0.1,
             timeout=30,
             stop=["<|end|>", "<|end_of_text|>", "<|im_end|>", "\n\n"],
-            stream=True
+            stream=True,
         )
 
         # Collect streaming chunks into full response
@@ -189,7 +243,7 @@ class StreamingAnalyzer:
         # Get RAG sections for script context
         rag_sections = []
         if self.retriever and summary:
-            rag_sections = self.retriever.retrieve(summary, context_text, top_k=3)
+            rag_sections = self._retrieve_context_sections(summary, context_text, top_k=3)
 
         # Build the stage-specific blueprint prompt
         system_prompt = get_recommendation_prompt(
@@ -247,7 +301,7 @@ class AnalysisOrchestrator:
             try:
                 req = self.queue.get(timeout=0.5)
                 start_time = time.time()
-                
+
                 try:
                     raw_json = self.analyzer.analyze(req.active_text, req.context_text)
                     data = json.loads(raw_json)
@@ -256,7 +310,7 @@ class AnalysisOrchestrator:
                         script_location=data.get("script_location", "Unknown"),
                         key_points=data.get("key_points", []),
                         suggestion=data.get("suggestion", ""),
-                        last_updated=time.time()
+                        last_updated=time.time(),
                     )
 
                     result = AnalysisResult(
@@ -264,21 +318,23 @@ class AnalysisOrchestrator:
                         active_text=req.active_text,
                         timestamp=time.time(),
                         latency_ms=(time.time() - start_time) * 1000,
-                        state=state
+                        state=state,
                     )
                     self.on_result(result)
 
                 except Exception as e:
                     logger.error(f"Analysis error: {e}", exc_info=True)
-                    self.on_result(AnalysisResult(
-                        raw_response="",
-                        active_text=req.active_text,
-                        timestamp=time.time(),
-                        latency_ms=(time.time() - start_time) * 1000,
-                        state=ConversationState(),
-                        error=str(e)
-                    ))
-                    
+                    self.on_result(
+                        AnalysisResult(
+                            raw_response="",
+                            active_text=req.active_text,
+                            timestamp=time.time(),
+                            latency_ms=(time.time() - start_time) * 1000,
+                            state=ConversationState(),
+                            error=str(e),
+                        )
+                    )
+
                 self.queue.task_done()
             except queue.Empty:
                 continue

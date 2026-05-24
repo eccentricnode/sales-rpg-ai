@@ -3,7 +3,7 @@
 - **Ground truth from this planning pass**
   - Branch is `phase5/ralph-loop`; `IMPLEMENTATION_PLAN.md` was absent before this pass.
   - `src/lib` does not exist. Treat `src/realtime`, `src/rag`, `src/integrations`, and `src/web` as the shared implementation layer for Phase 5 work.
-  - `prd.json` has been made honest for this iteration: S5-01, S5-02, and S5-03 are `passes: true` with current test evidence, S5-04/S5-05/S5-07 are `passes: false`, and S5-06/S5-08 are `passes: "deferred"` pending live Vexa/desktop probes.
+  - `prd.json` has been made honest for this iteration: S5-01, S5-02, S5-03, and S5-04 are `passes: true` with current test evidence, S5-05/S5-07 are `passes: false`, and S5-06/S5-08 are `passes: "deferred"` pending live Vexa/desktop probes.
   - Prior S5-02 sine-fixture finding is resolved: the failure came from using real Silero + Whisper on a pure sine fixture, which violates `specs/05-vad_transcriber.md`; the acceptance probe now mocks VAD/Whisper and verifies chunk continuity.
   - Local probe: `uv run pytest -q tests/test_s5_acceptance.py::TestS5_02_MicCutoff -vv` => **3 passed**.
   - Local probe: `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **67 passed**.
@@ -14,7 +14,7 @@
   - S5-06 increment completed locally: Vexa transcript bridge events feed `SummaryEngine`, `DualBufferManager`, and broadcast consumers; `/ws/dual-audio` segment callbacks now also feed their existing `DualBufferManager`.
   - S5-06 evidence: `uv run pytest -q tests/test_vexa_client.py tests/test_vexa_web.py tests/test_s5_acceptance.py::TestS5_06_MeetingNotetaker tests/test_dual_capture.py` => **10 passed, 1 skipped, 1 warning**.
   - Local probe: no Vexa container/service is reachable at `127.0.0.1:8080`.
-  - Explorer C finding: main `/ws/audio` and `/ws/dual-audio` paths do not appear to feed transcript segments into `DualBufferManager`/`AnalysisOrchestrator`.
+  - Prior Explorer C note about `/ws/dual-audio` not feeding `DualBufferManager` is stale: current `/ws/dual-audio` segment callbacks feed their existing `DualBufferManager`.
   - Explorer C finding: prompt output keys drift from runtime readers; prompts emit `phase`/`archetype`, while `AnalysisOrchestrator` reads `script_location`.
   - Explorer C collection blockers are resolved: hardware E2E is skipped cleanly, import-time side effects were removed, and stale imports were fixed.
   - Final iteration evidence: `uv run pytest -q` => **89 passed, 4 skipped**.
@@ -26,11 +26,14 @@
   - S5-03 WebSocket reconnection increment completed this iteration: FastAPI lifespan now runs startup security/connection lifecycle work; background stale-connection cleanup calls `ConnectionManager.cleanup_stale_connections()` on `manager.ping_interval`; monitor connections receive a `session_state` payload plus transcript and coaching replay; `ConnectionManager` stores bounded transcript/coaching history; recorder resume is explicitly unsupported via `recorder_resume.supported=false` because live audio streams cannot safely resume from in-memory state; dashboard monitor WebSocket retries on close.
   - S5-07 startup integrity subtask resolved this iteration: FastAPI lifespan invokes `verify_knowledge_base()` before runtime content is served; failed integrity raises `RuntimeError`; health only exposes the `valid`/`files_checked` integrity summary. S5-07 remains `passes: false` until the whole story is fully proven.
   - Current-iteration S5 evidence:
+    - `uv run pytest -q tests/test_behavioral.py::TestContextEngineLayer2Behavior tests/test_s5_acceptance.py::TestS5_04_ContextEngine -vv` => **7 passed**.
+    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **76 passed**.
+    - `uv run ruff check src/rag/chunker.py src/rag/retriever.py src/rag/build.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py && uv run ruff format --check src/rag/chunker.py src/rag/retriever.py src/rag/build.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py` => **All checks passed / 5 files already formatted**.
     - `uv run pytest -q tests/test_s5_acceptance.py::TestS5_03_WebSocketReconnection tests/test_behavioral.py::TestConnectionManagerBehavior tests/test_behavioral.py::TestStartupIntegrityBehavior` => **16 passed**.
     - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **72 passed**.
     - `uv run ruff check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py && uv run ruff format --check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py` => **All checks passed / 3 files already formatted**.
-    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_vexa_web.py` => **77 passed, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `test_vexa_web`.
-    - `uv run pytest -q` => **101 passed, 4 skipped, 1 warning**.
+    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_vexa_web.py` => **77 passed, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+    - `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
   - Added missing behavioral specs: `specs/05-vad_transcriber.md`, `specs/06-websocket_reconnection.md`, `specs/07-context_engine_layer2.md`, `specs/08-latency_optimization.md`, `specs/09-vexa_integration.md`, `specs/10-security_hardening.md`, `specs/11-overlay_widget.md`.
 
 - **P0: Make `prd.json` honest before any merge**
@@ -63,7 +66,22 @@
     - Transcript stream probe showing live Vexa/Zoom events reach `DualBufferManager` and coaching flow.
     - Human pre-flight: start Vexa Lite with Docker, export `VEXA_API_KEY`, `VEXA_HOST`, `VEXA_PORT`, and `VEXA_WS_PATH`, create a disposable Zoom or Google Meet call with two consenting speakers, admit the Vexa bot, confirm participant notice/consent, and capture evidence showing bot join plus transcript events from both sides.
 
-- **P3: Make S5-05 latency claims runtime-real**
+- **P3: Complete S5-04 Hardly Selling retrieval layer**
+  - Current status: completed this iteration; `prd.json` marks S5-04 `passes: true`.
+  - Why this matters: Hardly Selling methodology is now a retrievable Layer 2 source instead of only static prompt text, so live coaching can combine KubeCraft script guidance with methodology sections and preserve source labels for explainability.
+  - Completed implementation:
+    - `chunk_script()` labels script chunks with `metadata.source = "kubecraft_script"`.
+    - Added `chunk_methodology()` for `knowledge_base/hardly_selling_methodology.md`, including source, section, type, and phase/objection/close metadata.
+    - Runtime RAG initialization creates a separate `hardly_selling_methodology` embedding source and attaches it through `ScriptRetriever.add_source()`.
+    - Retrieval preserves source diversity and metadata, and `StreamingAnalyzer` formats source-aware retrieved sections into analysis and recommendation prompts.
+    - `src/rag/build.py` now builds/verifies both script and methodology collections.
+  - Tool-verified evidence:
+    - `uv run pytest -q tests/test_behavioral.py::TestContextEngineLayer2Behavior tests/test_s5_acceptance.py::TestS5_04_ContextEngine -vv` => **7 passed**.
+    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **76 passed**.
+    - `uv run ruff check src/rag/chunker.py src/rag/retriever.py src/rag/build.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py && uv run ruff format --check src/rag/chunker.py src/rag/retriever.py src/rag/build.py src/realtime/analysis_orchestrator.py tests/test_behavioral.py` => **All checks passed / 5 files already formatted**.
+    - `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+
+- **P4: Make S5-05 latency claims runtime-real**
   - Current status: structural and simulated tests pass, but runtime behavior is unproven.
   - `StreamingAnalyzer.analyze()` uses `stream=True` but collects the full response before returning, so UI incremental display is not proven.
   - `_try_with_fallback()` exists but the worker path calls `analyze()` directly.
@@ -72,14 +90,6 @@
     - Probe time-to-first-token reaching the UI before full response completion.
     - Probe primary timeout at 5 seconds invoking the fallback model in the production worker path.
     - Run a real or provider-backed benchmark recording p50 < 3s and p95 < 5s.
-
-- **P4: Complete S5-04 Hardly Selling retrieval layer**
-  - Current status: methodology file and `ScriptRetriever.add_source()` exist, but RAG initialization only loads `kubecraft_script.md`.
-  - Required probes:
-    - `rg -n "hardly_selling_methodology|add_source|chunk_script" src/realtime src/rag knowledge_base`
-    - `USE_RAG=true` analyzer initialization shows both script and methodology sources loaded.
-    - Retrieval query returns methodology content with source metadata.
-    - Coaching or recommendation output references a specific Hardly Selling technique when relevant.
 
 - **P5: Enforce S5-07 security startup behavior**
   - Current status: startup integrity subtask resolved this iteration; S5-07 remains incomplete until all security hardening criteria are proven.
@@ -114,8 +124,8 @@
     - `uv run pytest -q tests/test_s5_acceptance.py::TestS5_03_WebSocketReconnection tests/test_behavioral.py::TestConnectionManagerBehavior tests/test_behavioral.py::TestStartupIntegrityBehavior` => **16 passed**.
     - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **72 passed**.
     - `uv run ruff check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py && uv run ruff format --check src/web/app.py tests/test_behavioral.py tests/test_s5_acceptance.py` => **All checks passed / 3 files already formatted**.
-    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_vexa_web.py` => **77 passed, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `test_vexa_web`.
-    - `uv run pytest -q` => **101 passed, 4 skipped, 1 warning**.
+    - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py tests/test_vexa_web.py` => **77 passed, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
+    - `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
 
 - **P8: Reconfirm S5-01 provider extraction after changes**
   - Current status: lowest risk; behavioral provider tests pass.
@@ -126,7 +136,7 @@
 
 - **Merge gate**
   - Every S5 story must be either honestly probe-passing or marked `[DEFERRED-VERIFY]` with the exact pre-flight steps above.
-  - Final iteration core tests are green: `uv run pytest -q` => **101 passed, 4 skipped, 1 warning**.
+  - Final iteration core tests are green: `uv run pytest -q` => **105 passed, 4 skipped, 1 warning**; warning is the existing Starlette `TemplateResponse` deprecation in `tests/test_vexa_web.py`.
   - Touched-file ruff gates are green for `src/realtime/vad_transcriber.py`, `tests/test_s5_acceptance.py`, `tests/test_dual_capture.py`, `tests/test_objection_detection.py`, `src/validation/script_tester.py`, `tests/test_script_tester.py`, and `tests/test_e2e_pipeline.py`.
   - Do not block this iteration on repo-wide lint/type gates without separately scoping the cleanup: `uv run ruff check src/ tests/`, `uv run ruff format --check src/ tests/`, and `uv run mypy src/ --ignore-missing-imports` remain failing from pre-existing repo-wide issues.
   - Ensure the working tree is clean except intentional evidence/spec/plan/PRD updates.

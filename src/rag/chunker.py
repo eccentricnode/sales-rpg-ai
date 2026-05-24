@@ -79,12 +79,14 @@ def chunk_script(script_path: str) -> list[dict]:
             end_line = h2_indices[idx + 1][0]
         else:
             end_line = len(lines)
-        sections.append({
-            "header": header,
-            "start": line_num,
-            "end": end_line,
-            "text": "\n".join(lines[line_num:end_line]).strip(),
-        })
+        sections.append(
+            {
+                "header": header,
+                "start": line_num,
+                "end": end_line,
+                "text": "\n".join(lines[line_num:end_line]).strip(),
+            }
+        )
 
     # --- 1. Preamble chunk: everything before PART 1 ---
     preamble_sections = []
@@ -95,15 +97,18 @@ def chunk_script(script_path: str) -> list[dict]:
             preamble_sections.append(sec["text"])
 
     if preamble_sections:
-        chunks.append({
-            "id": "preamble",
-            "text": "\n\n".join(preamble_sections),
-            "metadata": {
-                "section": "Preamble: 4 Beliefs, Pre-Call Checklist, 3 Rules, No-Show Protocol",
-                "type": "preamble",
-                "part_number": None,
-            },
-        })
+        chunks.append(
+            {
+                "id": "preamble",
+                "text": "\n\n".join(preamble_sections),
+                "metadata": {
+                    "section": "Preamble: 4 Beliefs, Pre-Call Checklist, 3 Rules, No-Show Protocol",
+                    "type": "preamble",
+                    "part_number": None,
+                    "source": "kubecraft_script",
+                },
+            }
+        )
 
     # --- 2. Part chunks (PART 1 through PART 12) ---
     for sec in sections:
@@ -112,15 +117,18 @@ def chunk_script(script_path: str) -> list[dict]:
             short_title = _extract_part_short_title(sec["header"])
             chunk_id = f"part_{part_num}_{short_title}"
             section_title = sec["header"].lstrip("# ").strip()
-            chunks.append({
-                "id": chunk_id,
-                "text": sec["text"],
-                "metadata": {
-                    "section": section_title,
-                    "type": "script",
-                    "part_number": part_num,
-                },
-            })
+            chunks.append(
+                {
+                    "id": chunk_id,
+                    "text": sec["text"],
+                    "metadata": {
+                        "section": section_title,
+                        "type": "script",
+                        "part_number": part_num,
+                        "source": "kubecraft_script",
+                    },
+                }
+            )
 
     # --- 3. Objection Handling section ---
     # Find the "Objection Handling" h2 section
@@ -140,24 +148,29 @@ def chunk_script(script_path: str) -> list[dict]:
         for i in range(obj_start, obj_end):
             if lines[i].startswith("### The Core Principle"):
                 core_principle_start = i
-            elif core_principle_start is not None and (
-                lines[i].startswith("### ") or lines[i].startswith("#### ")
-            ) and i > core_principle_start:
+            elif (
+                core_principle_start is not None
+                and (lines[i].startswith("### ") or lines[i].startswith("#### "))
+                and i > core_principle_start
+            ):
                 core_principle_end = i
                 break
         if core_principle_start and not core_principle_end:
             core_principle_end = obj_end
 
         if core_principle_start:
-            chunks.append({
-                "id": "objection_core_principle",
-                "text": "\n".join(lines[core_principle_start:core_principle_end]).strip(),
-                "metadata": {
-                    "section": "Objection Handling: Core Principle - Use Their Own Words",
-                    "type": "objection",
-                    "part_number": None,
-                },
-            })
+            chunks.append(
+                {
+                    "id": "objection_core_principle",
+                    "text": "\n".join(lines[core_principle_start:core_principle_end]).strip(),
+                    "metadata": {
+                        "section": "Objection Handling: Core Principle - Use Their Own Words",
+                        "type": "objection",
+                        "part_number": None,
+                        "source": "kubecraft_script",
+                    },
+                }
+            )
 
         # 3b. Testing Objections
         testing_start = None
@@ -165,24 +178,29 @@ def chunk_script(script_path: str) -> list[dict]:
         for i in range(obj_start, obj_end):
             if lines[i].startswith("### Testing Objections"):
                 testing_start = i
-            elif testing_start is not None and (
-                lines[i].startswith("### ") or lines[i].startswith("#### ")
-            ) and i > testing_start:
+            elif (
+                testing_start is not None
+                and (lines[i].startswith("### ") or lines[i].startswith("#### "))
+                and i > testing_start
+            ):
                 testing_end = i
                 break
         if testing_start and not testing_end:
             testing_end = obj_end
 
         if testing_start:
-            chunks.append({
-                "id": "objection_testing",
-                "text": "\n".join(lines[testing_start:testing_end]).strip(),
-                "metadata": {
-                    "section": "Objection Handling: Testing Objections",
-                    "type": "objection",
-                    "part_number": None,
-                },
-            })
+            chunks.append(
+                {
+                    "id": "objection_testing",
+                    "text": "\n".join(lines[testing_start:testing_end]).strip(),
+                    "metadata": {
+                        "section": "Objection Handling: Testing Objections",
+                        "type": "objection",
+                        "part_number": None,
+                        "source": "kubecraft_script",
+                    },
+                }
+            )
 
         # 3c. Individual objection types by #### headers
         # Filter h4 indices to only those within the objection section
@@ -205,15 +223,18 @@ def chunk_script(script_path: str) -> list[dict]:
             # Remove "objection" suffix if it's there to avoid redundancy
             chunk_id = f"objection_{slug}"
 
-            chunks.append({
-                "id": chunk_id,
-                "text": "\n".join(lines[line_num:end]).strip(),
-                "metadata": {
-                    "section": f"Objection: {objection_name}",
-                    "type": "objection",
-                    "part_number": None,
-                },
-            })
+            chunks.append(
+                {
+                    "id": chunk_id,
+                    "text": "\n".join(lines[line_num:end]).strip(),
+                    "metadata": {
+                        "section": f"Objection: {objection_name}",
+                        "type": "objection",
+                        "part_number": None,
+                        "source": "kubecraft_script",
+                    },
+                }
+            )
 
     # --- 4. Reference chunk: Quick Reference + Key Reminders + Bottom Line ---
     reference_sections = []
@@ -236,15 +257,70 @@ def chunk_script(script_path: str) -> list[dict]:
                 break
 
     if reference_sections:
-        chunks.append({
-            "id": "reference",
-            "text": "\n\n".join(reference_sections),
-            "metadata": {
-                "section": "Quick Reference + Key Reminders",
-                "type": "reference",
-                "part_number": None,
-            },
-        })
+        chunks.append(
+            {
+                "id": "reference",
+                "text": "\n\n".join(reference_sections),
+                "metadata": {
+                    "section": "Quick Reference + Key Reminders",
+                    "type": "reference",
+                    "part_number": None,
+                    "source": "kubecraft_script",
+                },
+            }
+        )
+
+    return chunks
+
+
+def chunk_methodology(methodology_path: str) -> list[dict]:
+    """Parse the Hardly Selling methodology into retrievable chunks.
+
+    Chunks are intentionally source-labeled so downstream prompts can explain
+    which context layer produced a suggestion.
+    """
+    with open(methodology_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    lines = content.split("\n")
+    chunks = []
+
+    # Chunk every h2 section, with h3 phase/object headers split out where they
+    # make retrieval more stage-specific.
+    header_indices = []
+    for i, line in enumerate(lines):
+        if line.startswith("## ") or line.startswith("### "):
+            header_indices.append((i, line.strip()))
+
+    for idx, (line_num, header) in enumerate(header_indices):
+        end = header_indices[idx + 1][0] if idx + 1 < len(header_indices) else len(lines)
+        text = "\n".join(lines[line_num:end]).strip()
+        if not text:
+            continue
+
+        title = header.lstrip("# ").strip()
+        section_type = "methodology"
+        if "phase" in title.lower():
+            section_type = "methodology_phase"
+        elif "buyer" in title.lower() or "archetype" in title.lower():
+            section_type = "methodology_archetype"
+        elif "objection" in title.lower():
+            section_type = "methodology_objection"
+        elif "close" in title.lower() or "tie-down" in title.lower():
+            section_type = "methodology_close"
+
+        chunks.append(
+            {
+                "id": f"methodology_{_slugify(title)}",
+                "text": text,
+                "metadata": {
+                    "section": title,
+                    "type": section_type,
+                    "part_number": None,
+                    "source": "hardly_selling_methodology",
+                },
+            }
+        )
 
     return chunks
 
@@ -279,9 +355,9 @@ def get_adjacent_chunks(chunks: list[dict], part_number: int, window: int = 1) -
     low = part_number - window
     high = part_number + window
     return [
-        chunk for chunk in chunks
-        if chunk["metadata"]["part_number"] is not None
-        and low <= chunk["metadata"]["part_number"] <= high
+        chunk
+        for chunk in chunks
+        if chunk["metadata"]["part_number"] is not None and low <= chunk["metadata"]["part_number"] <= high
     ]
 
 
