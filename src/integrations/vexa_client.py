@@ -16,14 +16,31 @@ Environment variables:
 """
 
 import asyncio
+import inspect
 import json
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _websocket_header_kwargs(connect_callable, headers: dict[str, str]) -> dict:
+    """Return the auth-header kwarg supported by the installed websockets client."""
+    if not headers:
+        return {}
+
+    parameters = inspect.signature(connect_callable).parameters
+    if "additional_headers" in parameters:
+        return {"additional_headers": headers}
+    if "extra_headers" in parameters:
+        return {"extra_headers": headers}
+
+    # Historical websockets clients accepted extra_headers. Keep auth explicit
+    # instead of silently dropping it if an unexpected client is installed.
+    return {"extra_headers": headers}
 
 
 @dataclass
@@ -160,10 +177,7 @@ class VexaClient:
         try:
             import websockets
         except ImportError:
-            raise ImportError(
-                "websockets library required for Vexa integration. "
-                "Install with: pip install websockets"
-            )
+            raise ImportError("websockets library required for Vexa integration. Install with: pip install websockets")
 
         url = self.config.ws_url
         headers = {}
@@ -173,9 +187,10 @@ class VexaClient:
         logger.info("Connecting to Vexa at %s", url)
 
         try:
+            header_kwargs = _websocket_header_kwargs(websockets.connect, headers)
             self._ws = await websockets.connect(
                 url,
-                additional_headers=headers,
+                **header_kwargs,
                 ping_interval=self.config.ping_interval_seconds,
             )
             self._connected = True
@@ -222,11 +237,13 @@ class VexaClient:
         if not self._connected or not self._ws:
             raise ConnectionError("Not connected to Vexa. Call connect() first.")
 
-        create_msg = json.dumps({
-            "type": "create_bot",
-            "meeting_url": meeting_url,
-            "bot_name": bot_name,
-        })
+        create_msg = json.dumps(
+            {
+                "type": "create_bot",
+                "meeting_url": meeting_url,
+                "bot_name": bot_name,
+            }
+        )
 
         await self._ws.send(create_msg)
         response = await self._ws.recv()
@@ -348,10 +365,12 @@ class VexaClient:
             await self.connect()
             if self._meeting_id:
                 # Re-subscribe to the existing meeting
-                resubscribe_msg = json.dumps({
-                    "type": "subscribe",
-                    "meeting_id": self._meeting_id,
-                })
+                resubscribe_msg = json.dumps(
+                    {
+                        "type": "subscribe",
+                        "meeting_id": self._meeting_id,
+                    }
+                )
                 await self._ws.send(resubscribe_msg)
             self._receive_task = asyncio.create_task(self._receive_loop())
         except Exception as exc:

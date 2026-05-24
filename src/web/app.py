@@ -3,21 +3,24 @@ FastAPI Web Application for Sales AI.
 
 Serves the web UI and handles WebSocket connections for real-time audio streaming.
 """
+# ruff: noqa: E402
 
-import os
-import sys
 import asyncio
 import json
 import logging
+import os
+import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import HTMLResponse
+import websockets
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import websockets
 
 # Add project root to path to import src modules
 project_root = Path(__file__).parent.parent.parent
@@ -25,14 +28,24 @@ sys.path.append(str(project_root))
 
 # Load env vars
 from dotenv import load_dotenv
+
 load_dotenv(project_root / ".env")
 
-from src.realtime.buffer_manager import DualBufferManager, BufferConfig
 from src.realtime.analysis_orchestrator import AnalysisOrchestrator, AnalysisResult, StreamingAnalyzer
-from src.realtime.summary_engine import SummaryEngine, SummaryResult
-from src.realtime.models import ConversationState
-from src.realtime.vad_transcriber import VadTranscriber
+from src.realtime.buffer_manager import DualBufferManager
 from src.realtime.llm_provider import get_llm_config
+from src.realtime.summary_engine import SummaryEngine, SummaryResult
+from src.realtime.vad_transcriber import VadTranscriber
+
+try:
+    from src.integrations.vexa_client import TranscriptEvent, VexaClient, VexaConfig
+
+    VEXA_AVAILABLE = True
+except ImportError:
+    TranscriptEvent = None
+    VexaClient = None
+    VexaConfig = None
+    VEXA_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +56,7 @@ logger = logging.getLogger(__name__)
 try:
     from src.audio import DualCaptureManager
     from src.transcription import DualStreamTranscriber
+
     DUAL_CAPTURE_AVAILABLE = True
 except ImportError:
     DUAL_CAPTURE_AVAILABLE = False
@@ -61,8 +75,7 @@ WHISPER_PORT = int(os.getenv("WHISPER_PORT", "9090"))
 
 # WebSocket origin validation
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:8000,http://localhost:8080,http://127.0.0.1:8000,http://127.0.0.1:8080"
+    "ALLOWED_ORIGINS", "http://localhost:8000,http://localhost:8080,http://127.0.0.1:8000,http://127.0.0.1:8080"
 ).split(",")
 
 
@@ -86,6 +99,7 @@ def validate_origin(websocket: WebSocket) -> bool:
     allowed = [o.strip() for o in ALLOWED_ORIGINS]
     return origin in allowed
 
+
 # VadTranscriber configuration
 VAD_WHISPER_MODEL = os.getenv("VAD_WHISPER_MODEL", "base")
 VAD_DEVICE = os.getenv("VAD_DEVICE", "cuda")
@@ -94,6 +108,7 @@ TRANSCRIPTION_ENGINE = os.getenv("TRANSCRIPTION_ENGINE", "vad")  # "vad" or "whi
 
 # LLM configuration — loaded from src.realtime.llm_provider
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "local")
+
 
 # Global state for broadcasting
 class ConnectionManager:
@@ -156,7 +171,94 @@ class ConnectionManager:
         for conn in disconnected:
             self.active_connections.remove(conn)
 
+
 manager = ConnectionManager()
+
+
+@dataclass
+class VexaMeetingSession:
+    """Runtime resources for one active Vexa meeting bridge."""
+
+    client: Any
+    meeting_id: str
+    meeting_url: str
+    summary_engine: SummaryEngine
+    orchestrator: Optional[AnalysisOrchestrator]
+    started_at: float
+
+
+active_vexa_session: Optional[VexaMeetingSession] = None
+
+
+def _is_supported_meeting_url(meeting_url: str) -> bool:
+    """Return True for meeting URLs Vexa is expected to join."""
+    parsed = urlparse(meeting_url)
+    if parsed.scheme not in {"http", "https"}:
+        return False
+
+    host = (parsed.hostname or "").lower()
+    supported_hosts = (
+        "zoom.us",
+        "meet.google.com",
+        "teams.microsoft.com",
+    )
+    return any(host == allowed or host.endswith(f".{allowed}") for allowed in supported_hosts)
+
+
+async def _stop_active_vexa_session() -> None:
+    """Stop and clean up the current Vexa bridge, if one exists."""
+    global active_vexa_session
+
+    session = active_vexa_session
+    active_vexa_session = None
+    if not session:
+        return
+
+    session.summary_engine.stop()
+    if session.orchestrator:
+        session.orchestrator.shutdown()
+
+    try:
+        await session.client.stop_streaming()
+    finally:
+        await session.client.disconnect()
+
+
+def _create_vexa_transcript_bridge(
+    *,
+    client: Any,
+    buffer_manager: Optional[DualBufferManager],
+    summary_engine: SummaryEngine,
+    loop: asyncio.AbstractEventLoop,
+):
+    """Register a Vexa transcript callback that feeds the shared pipeline."""
+
+    def on_transcript(event: TranscriptEvent) -> None:
+        speaker = event.speaker or "unknown"
+        text = event.text.strip()
+        if not text:
+            return
+
+        msg_data = {
+            "type": "transcript",
+            "source": "vexa",
+            "speaker": speaker,
+            "meeting_id": event.meeting_id,
+            "text": text,
+            "start": event.start,
+            "end": event.end,
+            "is_final": event.is_final,
+        }
+
+        summary_engine.add_transcript(f"{speaker}: {text}")
+        if buffer_manager:
+            buffer_manager.on_transcript_chunk(text, [event.to_segment_dict()])
+
+        asyncio.run_coroutine_threadsafe(manager.broadcast(msg_data), loop)
+
+    client.on_transcript(on_transcript)
+    return on_transcript
+
 
 @app.get("/health")
 async def health_check():
@@ -166,18 +268,153 @@ async def health_check():
         "whisper_host": WHISPER_HOST,
         "whisper_port": WHISPER_PORT,
         "llm_provider": LLM_PROVIDER,
-        "active_connections": len(manager.active_connections)
+        "active_connections": len(manager.active_connections),
     }
+
+
+@app.get("/api/vexa/status")
+async def vexa_status():
+    """Return the active Vexa meeting bridge status."""
+    if not active_vexa_session:
+        return {"active": False}
+    return {
+        "active": True,
+        "meeting_id": active_vexa_session.meeting_id,
+        "meeting_url": active_vexa_session.meeting_url,
+        "started_at": active_vexa_session.started_at,
+    }
+
+
+@app.post("/api/vexa/join")
+async def join_vexa_meeting(request: Request):
+    """Dispatch a Vexa bot and bridge its transcripts into coaching."""
+    global active_vexa_session
+
+    if not VEXA_AVAILABLE:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "error": "Vexa integration is not available"},
+        )
+
+    try:
+        payload = await request.json()
+    except json.JSONDecodeError:
+        return JSONResponse(status_code=400, content={"status": "error", "error": "Invalid JSON payload"})
+
+    meeting_url = str(payload.get("meeting_url", "")).strip()
+    bot_name = str(payload.get("bot_name", "Sales RPG AI")).strip() or "Sales RPG AI"
+
+    if not meeting_url:
+        return JSONResponse(status_code=400, content={"status": "error", "error": "meeting_url is required"})
+    if not _is_supported_meeting_url(meeting_url):
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "error": "meeting_url must be a Zoom, Google Meet, or Microsoft Teams URL"},
+        )
+
+    await _stop_active_vexa_session()
+    loop = asyncio.get_running_loop()
+
+    try:
+        llm_cfg = get_llm_config()
+        analyzer = StreamingAnalyzer(
+            api_key=llm_cfg.api_key,
+            base_url=llm_cfg.base_url,
+            model=llm_cfg.model,
+        )
+    except ValueError as e:
+        return JSONResponse(status_code=503, content={"status": "error", "error": f"LLM configuration error: {e}"})
+
+    def on_summary_result(result: SummaryResult):
+        data = {
+            "type": "summary",
+            "source": "vexa",
+            "summary": result.summary,
+            "key_points": result.key_points,
+            "pain_indicators": result.pain_indicators,
+            "stage_hint": result.stage_hint,
+            "archetype_hint": result.archetype_hint,
+            "latency": result.latency_ms,
+            "error": result.error,
+        }
+        asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
+
+    def on_analysis_result(result: AnalysisResult):
+        data = {
+            "type": "analysis",
+            "source": "vexa",
+            "script_location": result.state.script_location,
+            "key_points": result.state.key_points,
+            "suggestion": result.state.suggestion,
+            "latency": result.latency_ms,
+            "error": result.error,
+        }
+        asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
+
+    summary_engine = SummaryEngine(
+        client=analyzer.client,
+        model=llm_cfg.model,
+        on_summary=on_summary_result,
+        interval=300,
+    )
+    orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_analysis_result)
+    buffer_manager = DualBufferManager(on_analysis_ready=orchestrator.submit_analysis)
+
+    client = VexaClient(VexaConfig())
+    _create_vexa_transcript_bridge(
+        client=client,
+        buffer_manager=buffer_manager,
+        summary_engine=summary_engine,
+        loop=loop,
+    )
+
+    try:
+        await client.connect()
+        meeting_id = await client.create_meeting_bot(meeting_url, bot_name=bot_name)
+        orchestrator.start()
+        summary_engine.start()
+        await client.start_streaming()
+    except Exception as e:
+        summary_engine.stop()
+        orchestrator.shutdown()
+        try:
+            await client.disconnect()
+        except Exception:
+            logger.debug("Vexa disconnect after failed join also failed", exc_info=True)
+        logger.error("Vexa join failed: %s", e, exc_info=True)
+        return JSONResponse(status_code=502, content={"status": "error", "error": str(e)})
+
+    active_vexa_session = VexaMeetingSession(
+        client=client,
+        meeting_id=meeting_id,
+        meeting_url=meeting_url,
+        summary_engine=summary_engine,
+        orchestrator=orchestrator,
+        started_at=time.time(),
+    )
+    await manager.broadcast({"type": "status", "source": "vexa", "message": "Vexa bot joining meeting"})
+    return {"status": "joined", "meeting_id": meeting_id}
+
+
+@app.post("/api/vexa/stop")
+async def stop_vexa_meeting():
+    """Stop the active Vexa meeting bridge."""
+    await _stop_active_vexa_session()
+    await manager.broadcast({"type": "status", "source": "vexa", "message": "Vexa meeting bridge stopped"})
+    return {"status": "stopped"}
+
 
 @app.get("/", response_class=HTMLResponse)
 async def get_home(request: Request):
     """Serve the main application page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
+
 @app.get("/transcript", response_class=HTMLResponse)
 async def get_transcript(request: Request):
     """Serve the transcript page."""
     return templates.TemplateResponse("transcript.html", {"request": request})
+
 
 @app.websocket("/ws/audio")
 async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
@@ -186,7 +423,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
     """
     # Validate origin header before accepting the connection
     if not validate_origin(websocket):
-        logger.warning(f"Rejected WebSocket connection from disallowed origin")
+        logger.warning("Rejected WebSocket connection from disallowed origin")
         await websocket.close(code=1008, reason="Origin not allowed")
         return
 
@@ -194,7 +431,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
         await manager.connect(websocket)
         try:
             while True:
-                await websocket.receive_text() # Keep connection alive
+                await websocket.receive_text()  # Keep connection alive
         except WebSocketDisconnect:
             manager.disconnect(websocket)
         return
@@ -208,11 +445,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
     # Initialize LLM components
     try:
         llm_cfg = get_llm_config()
-        analyzer = StreamingAnalyzer(
-            api_key=llm_cfg.api_key,
-            base_url=llm_cfg.base_url,
-            model=llm_cfg.model
-        )
+        analyzer = StreamingAnalyzer(api_key=llm_cfg.api_key, base_url=llm_cfg.base_url, model=llm_cfg.model)
     except ValueError as e:
         logger.error(f"LLM configuration error: {e}")
         await websocket.close(code=1011, reason=str(e))
@@ -262,10 +495,12 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
         if command == "recommend":
             summary = summary_engine.current_summary
             if not summary or not summary.summary:
-                await websocket.send_json({
-                    "type": "recommendation",
-                    "error": "No summary available yet. Click 'Refresh Summary' first.",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "recommendation",
+                        "error": "No summary available yet. Click 'Refresh Summary' first.",
+                    }
+                )
                 return
 
             try:
@@ -287,30 +522,38 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                 await manager.broadcast(msg)
             except json.JSONDecodeError as e:
                 logger.error(f"Recommend JSON parse error: {e}")
-                await websocket.send_json({
-                    "type": "recommendation",
-                    "error": f"Failed to parse recommendation: {e}",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "recommendation",
+                        "error": f"Failed to parse recommendation: {e}",
+                    }
+                )
             except Exception as e:
                 logger.error(f"Recommend error: {e}", exc_info=True)
-                await websocket.send_json({
-                    "type": "recommendation",
-                    "error": str(e),
-                })
+                await websocket.send_json(
+                    {
+                        "type": "recommendation",
+                        "error": str(e),
+                    }
+                )
 
         elif command == "refresh_summary":
             try:
                 await asyncio.to_thread(summary_engine.refresh)
             except Exception as e:
                 logger.error(f"Summary refresh error: {e}", exc_info=True)
-                await websocket.send_json({
-                    "type": "summary",
-                    "error": str(e),
-                })
+                await websocket.send_json(
+                    {
+                        "type": "summary",
+                        "error": str(e),
+                    }
+                )
 
     if TRANSCRIPTION_ENGINE == "vad":
         # ── VadTranscriber: Direct local VAD + Whisper ──────────────
-        logger.info(f"Using VadTranscriber (model={VAD_WHISPER_MODEL}, device={VAD_DEVICE}, silence={VAD_SILENCE_MS}ms)")
+        logger.info(
+            f"Using VadTranscriber (model={VAD_WHISPER_MODEL}, device={VAD_DEVICE}, silence={VAD_SILENCE_MS}ms)"
+        )
         try:
             vad = VadTranscriber(
                 model=VAD_WHISPER_MODEL,
@@ -332,7 +575,9 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                 message = await websocket.receive()
 
                 if message.get("type") == "websocket.disconnect":
-                    logger.info(f"Client disconnected (code={message.get('code', 'unknown')}), processed {audio_chunks_received} chunks ({total_bytes_received} bytes)")
+                    logger.info(
+                        f"Client disconnected (code={message.get('code', 'unknown')}), processed {audio_chunks_received} chunks ({total_bytes_received} bytes)"
+                    )
                     break
 
                 if "bytes" in message:
@@ -341,7 +586,9 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                     total_bytes_received += len(chunk)
 
                     if audio_chunks_received % 50 == 1:
-                        logger.info(f"Audio received: {audio_chunks_received} chunks, {total_bytes_received} bytes total")
+                        logger.info(
+                            f"Audio received: {audio_chunks_received} chunks, {total_bytes_received} bytes total"
+                        )
 
                     # Feed to VadTranscriber (may block briefly during transcription)
                     segments = await asyncio.to_thread(vad.feed, chunk)
@@ -367,7 +614,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                         cmd_data = json.loads(message["text"])
                         await handle_command(cmd_data)
                     except json.JSONDecodeError:
-                        logger.warning(f"Invalid JSON command received")
+                        logger.warning("Invalid JSON command received")
 
         except WebSocketDisconnect:
             logger.info(f"Client disconnected, processed {audio_chunks_received} chunks ({total_bytes_received} bytes)")
@@ -420,13 +667,20 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                 break
             except (ConnectionRefusedError, OSError) as e:
                 if attempt < max_retries - 1:
-                    delay = min(2 ** attempt, 16)
-                    logger.warning(f"WhisperLiveKit not ready (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {delay}s...")
+                    delay = min(2**attempt, 16)
+                    logger.warning(
+                        f"WhisperLiveKit not ready (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {delay}s..."
+                    )
                     await asyncio.sleep(delay)
                 else:
                     logger.error(f"Failed to connect to WhisperLiveKit after {max_retries} attempts: {e}")
                     try:
-                        await websocket.send_json({"type": "error", "error": f"Transcription service unavailable after {max_retries} attempts. Is WhisperLive running?"})
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "error": f"Transcription service unavailable after {max_retries} attempts. Is WhisperLive running?",
+                            }
+                        )
                         await websocket.close(code=1011, reason="WhisperLive unavailable")
                     except RuntimeError:
                         pass
@@ -476,7 +730,13 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                                 if is_new_line or is_updated:
                                     is_final = i < len(lines) - 1
                                     logger.info(f"Sending transcript to browser: '{text[:50]}' is_final={is_final}")
-                                    msg_data = {"type": "transcript", "text": text, "start": start, "end": end, "is_final": is_final}
+                                    msg_data = {
+                                        "type": "transcript",
+                                        "text": text,
+                                        "start": start,
+                                        "end": end,
+                                        "is_final": is_final,
+                                    }
                                     await websocket.send_json(msg_data)
                                     await manager.broadcast(msg_data)
                                     segments.append({"text": text, "start": start, "end": end, "completed": is_final})
@@ -485,7 +745,13 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
 
                             if buffer_text and buffer_text != last_buffer_text:
                                 last_buffer_text = buffer_text
-                                msg_data = {"type": "transcript", "text": buffer_text, "start": 0, "end": 0, "is_final": False}
+                                msg_data = {
+                                    "type": "transcript",
+                                    "text": buffer_text,
+                                    "start": 0,
+                                    "end": 0,
+                                    "is_final": False,
+                                }
                                 await websocket.send_json(msg_data)
                                 await manager.broadcast(msg_data)
                                 segments.append({"text": buffer_text, "start": 0, "end": 0, "completed": False})
@@ -511,7 +777,9 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                     while True:
                         message = await websocket.receive()
                         if message.get("type") == "websocket.disconnect":
-                            logger.info(f"Client disconnected (code={message.get('code', 'unknown')}), relayed {audio_chunks_sent} chunks ({total_bytes_sent} bytes)")
+                            logger.info(
+                                f"Client disconnected (code={message.get('code', 'unknown')}), relayed {audio_chunks_sent} chunks ({total_bytes_sent} bytes)"
+                            )
                             break
                         if "bytes" in message:
                             chunk = message["bytes"]
@@ -521,7 +789,9 @@ async def websocket_endpoint(websocket: WebSocket, role: str = "recorder"):
                                     audio_chunks_sent += 1
                                     total_bytes_sent += len(chunk)
                                     if audio_chunks_sent % 50 == 1:
-                                        logger.info(f"Audio relay: {audio_chunks_sent} chunks, {total_bytes_sent} bytes total, last chunk {len(chunk)} bytes")
+                                        logger.info(
+                                            f"Audio relay: {audio_chunks_sent} chunks, {total_bytes_sent} bytes total, last chunk {len(chunk)} bytes"
+                                        )
                                 except websockets.exceptions.ConnectionClosed:
                                     logger.warning("WhisperLiveKit gone, stopping audio relay")
                                     whisper_alive = False
@@ -551,16 +821,15 @@ async def dual_audio_endpoint(websocket: WebSocket):
     """
     # Validate origin header before accepting the connection
     if not validate_origin(websocket):
-        logger.warning(f"Rejected dual-audio WebSocket from disallowed origin")
+        logger.warning("Rejected dual-audio WebSocket from disallowed origin")
         await websocket.close(code=1008, reason="Origin not allowed")
         return
 
     if not DUAL_CAPTURE_AVAILABLE:
         await websocket.accept()
-        await websocket.send_json({
-            "type": "error",
-            "message": "Dual capture not available. PyAudio not installed. Use /ws/audio instead."
-        })
+        await websocket.send_json(
+            {"type": "error", "message": "Dual capture not available. PyAudio not installed. Use /ws/audio instead."}
+        )
         await websocket.close(code=1011, reason="Dual capture not available")
         return
 
@@ -595,17 +864,25 @@ async def dual_audio_endpoint(websocket: WebSocket):
         }
         asyncio.run_coroutine_threadsafe(websocket.send_json(msg_data), loop)
         asyncio.run_coroutine_threadsafe(manager.broadcast(msg_data), loop)
+        if buffer_manager:
+            buffer_manager.on_transcript_chunk(
+                segment.text,
+                [
+                    {
+                        "text": segment.text,
+                        "start": segment.start,
+                        "end": segment.end,
+                        "completed": segment.is_final,
+                    }
+                ],
+            )
 
     transcriber.on_segment = on_segment
 
     # Initialize components for analysis (optional)
     try:
         llm_cfg = get_llm_config()
-        analyzer = StreamingAnalyzer(
-            api_key=llm_cfg.api_key,
-            base_url=llm_cfg.base_url,
-            model=llm_cfg.model
-        )
+        analyzer = StreamingAnalyzer(api_key=llm_cfg.api_key, base_url=llm_cfg.base_url, model=llm_cfg.model)
     except ValueError as e:
         logger.warning(f"LLM not configured: {e}")
         analyzer = None
@@ -614,6 +891,7 @@ async def dual_audio_endpoint(websocket: WebSocket):
     buffer_manager = None
 
     if analyzer:
+
         def on_analysis_result(result: AnalysisResult):
             data = {
                 "type": "analysis",
@@ -621,7 +899,7 @@ async def dual_audio_endpoint(websocket: WebSocket):
                 "key_points": result.state.key_points,
                 "suggestion": result.state.suggestion,
                 "latency": result.latency_ms,
-                "error": result.error
+                "error": result.error,
             }
             asyncio.run_coroutine_threadsafe(websocket.send_json(data), loop)
             asyncio.run_coroutine_threadsafe(manager.broadcast(data), loop)
@@ -629,14 +907,8 @@ async def dual_audio_endpoint(websocket: WebSocket):
         def on_analysis_ready(active_text: str, context_text: str):
             orchestrator.submit_analysis(active_text, context_text)
 
-        orchestrator = AnalysisOrchestrator(
-            analyzer=analyzer,
-            on_result=on_analysis_result
-        )
-        buffer_manager = DualBufferManager(
-            on_analysis_ready=on_analysis_ready,
-            on_state_analysis_ready=lambda x: None
-        )
+        orchestrator = AnalysisOrchestrator(analyzer=analyzer, on_result=on_analysis_result)
+        buffer_manager = DualBufferManager(on_analysis_ready=on_analysis_ready, on_state_analysis_ready=lambda x: None)
         orchestrator.start()
 
     try:
@@ -645,17 +917,17 @@ async def dual_audio_endpoint(websocket: WebSocket):
         mic_path, system_path = await dual_capture.start(session_id)
 
         # Send status to client
-        await websocket.send_json({
-            "type": "status",
-            "message": "Dual capture started",
-            "mic_path": str(mic_path),
-            "system_path": str(system_path),
-        })
+        await websocket.send_json(
+            {
+                "type": "status",
+                "message": "Dual capture started",
+                "mic_path": str(mic_path),
+                "system_path": str(system_path),
+            }
+        )
 
         # Start transcription in background
-        transcribe_task = asyncio.create_task(
-            transcriber.transcribe_streams(mic_path, system_path)
-        )
+        transcribe_task = asyncio.create_task(transcriber.transcribe_streams(mic_path, system_path))
 
         # Main loop: Wait for control messages from browser
         try:
@@ -681,21 +953,20 @@ async def dual_audio_endpoint(websocket: WebSocket):
         transcript = await transcribe_task
 
         # Send final transcript
-        await websocket.send_json({
-            "type": "final_transcript",
-            "text": transcript.to_text(),
-            "json": json.loads(transcript.to_json()),
-            "srt": transcript.to_srt(),
-        })
+        await websocket.send_json(
+            {
+                "type": "final_transcript",
+                "text": transcript.to_text(),
+                "json": json.loads(transcript.to_json()),
+                "srt": transcript.to_srt(),
+            }
+        )
 
         logger.info(f"Dual capture session complete: {len(transcript.segments)} segments")
 
     except Exception as e:
         logger.error(f"Dual capture error: {e}")
-        await websocket.send_json({
-            "type": "error",
-            "message": str(e)
-        })
+        await websocket.send_json({"type": "error", "message": str(e)})
     finally:
         if dual_capture.is_capturing:
             await dual_capture.stop()

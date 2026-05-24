@@ -9,8 +9,10 @@
   - Local probe: `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **67 passed**.
   - Local probe: `pytest -q tests/test_behavioral.py` => **44 passed**.
   - Local probe: `pytest -q tests/test_latency_benchmark.py` => **3 passed**.
-  - Local probe: Vexa bridge translation into `DualBufferManager` works for a synthetic `TranscriptEvent`, but this is not evidence of Zoom/Meet capture.
-  - Local probe: `websockets.__version__` is `10.4`; `VexaClient.connect()` fails with `BaseEventLoop.create_connection() got an unexpected keyword argument 'additional_headers'`.
+  - S5-06 increment completed locally: `VexaClient` now selects the installed `websockets` header kwarg, using `extra_headers` for `websockets==10.4` while allowing newer clients to use `additional_headers`.
+  - S5-06 increment completed locally: the web app exposes `/api/vexa/join`, `/api/vexa/status`, and `/api/vexa/stop`, and the dashboard now includes a meeting URL Join control.
+  - S5-06 increment completed locally: Vexa transcript bridge events feed `SummaryEngine`, `DualBufferManager`, and broadcast consumers; `/ws/dual-audio` segment callbacks now also feed their existing `DualBufferManager`.
+  - S5-06 evidence: `uv run pytest -q tests/test_vexa_client.py tests/test_vexa_web.py tests/test_s5_acceptance.py::TestS5_06_MeetingNotetaker tests/test_dual_capture.py` => **10 passed, 1 skipped, 1 warning**.
   - Local probe: no Vexa container/service is reachable at `127.0.0.1:8080`.
   - Explorer C finding: main `/ws/audio` and `/ws/dual-audio` paths do not appear to feed transcript segments into `DualBufferManager`/`AnalysisOrchestrator`.
   - Explorer C finding: prompt output keys drift from runtime readers; prompts emit `phase`/`archetype`, while `AnalysisOrchestrator` reads `script_location`.
@@ -38,20 +40,21 @@
     - `uv run pytest -q tests/test_s5_acceptance.py tests/test_behavioral.py` => **67 passed**.
 
 - **P2: Bring S5-06 Vexa integration to honest state**
-  - Current status: partial code/docs only, not live verified.
-  - Confirm and fix the local `websockets` API mismatch before any Vexa connection probe.
-  - Confirm whether a FastAPI route and web UI control should exist; docs currently claim a "Join Meeting" button, but `src/web` has no matching implementation.
-  - Required machine probes:
-    - `rg -n "vexa|join|meeting" src/web src/web/templates src/integrations`
+  - Current status: S5-06 increment completed locally, but S5-06 must remain deferred until live Vexa/Zoom/Meet verification is captured.
+  - Why this matters: meeting capture now has an operator path and a runtime bridge into the same coaching memory used by local dual-audio capture, so remote-call transcripts can drive summaries, buffering, and live broadcast updates instead of staying isolated in the integration layer.
+  - Completed implementation:
+    - `VexaClient` selects the installed `websockets` header kwarg, using `extra_headers` for `websockets==10.4` and allowing newer clients to use `additional_headers`.
+    - The web app exposes `/api/vexa/join`, `/api/vexa/status`, and `/api/vexa/stop`.
+    - The dashboard includes a meeting URL Join control for Vexa-backed meeting capture.
+    - The Vexa transcript bridge feeds `SummaryEngine`, `DualBufferManager`, and broadcast consumers.
+    - `/ws/dual-audio` segment callbacks now feed their existing `DualBufferManager` too.
+  - Tool-verified evidence:
+    - `uv run pytest -q tests/test_vexa_client.py tests/test_vexa_web.py tests/test_s5_acceptance.py::TestS5_06_MeetingNotetaker tests/test_dual_capture.py` => **10 passed, 1 skipped, 1 warning**.
+  - `[DEFERRED-VERIFY]` live Vexa/Zoom probes remain deferred unless a Vexa server and disposable meeting are available:
     - `curl -fsS http://127.0.0.1:8080/health` against a running Vexa deployment.
     - Vexa bot creation or attachment probe returning a meeting/session id.
-    - Transcript stream probe showing Vexa events reach `DualBufferManager` and coaching flow.
-  - `[DEFERRED-VERIFY]` human pre-flight if no live Vexa/meeting is available:
-    - Start Vexa Lite with Docker and confirm the API/WebSocket endpoint is reachable.
-    - Generate/export `VEXA_API_KEY`, `VEXA_HOST`, `VEXA_PORT`, and `VEXA_WS_PATH`.
-    - Create a disposable Zoom or Google Meet call with two consenting speakers.
-    - Admit the Vexa bot and confirm participant notice/consent.
-    - Capture evidence showing bot join, transcript events from both sides, and Sales RPG AI receiving those events.
+    - Transcript stream probe showing live Vexa/Zoom events reach `DualBufferManager` and coaching flow.
+    - Human pre-flight: start Vexa Lite with Docker, export `VEXA_API_KEY`, `VEXA_HOST`, `VEXA_PORT`, and `VEXA_WS_PATH`, create a disposable Zoom or Google Meet call with two consenting speakers, admit the Vexa bot, confirm participant notice/consent, and capture evidence showing bot join plus transcript events from both sides.
 
 - **P3: Make S5-05 latency claims runtime-real**
   - Current status: structural and simulated tests pass, but runtime behavior is unproven.

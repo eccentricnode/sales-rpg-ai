@@ -14,6 +14,9 @@ class AudioClient {
         this.recommendBtn = document.getElementById('recommendBtn');
         this.refreshSummaryBtn = document.getElementById('refreshSummaryBtn');
         this.recommendStatus = document.getElementById('recommendStatus');
+        this.vexaJoinForm = document.getElementById('vexaJoinForm');
+        this.meetingUrlInput = document.getElementById('meetingUrlInput');
+        this.joinMeetingBtn = document.getElementById('joinMeetingBtn');
 
         // Tab elements
         this.tabs = document.querySelectorAll('.tab');
@@ -41,6 +44,7 @@ class AudioClient {
         this.stopBtn.addEventListener('click', () => this.stopRecording());
         this.recommendBtn.addEventListener('click', () => this.requestRecommendation());
         this.refreshSummaryBtn.addEventListener('click', () => this.refreshSummary());
+        this.vexaJoinForm.addEventListener('submit', (event) => this.joinMeeting(event));
 
         // Tab switching
         this.tabs.forEach(tab => {
@@ -140,25 +144,7 @@ class AudioClient {
 
         this.socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-
-            switch (data.type) {
-                case 'transcript':
-                    this.handleTranscript(data);
-                    break;
-                case 'summary':
-                    this.handleSummary(data);
-                    break;
-                case 'recommendation':
-                    this.handleRecommendation(data);
-                    break;
-                case 'analysis':
-                    // Legacy analysis — show as suggestion
-                    this.handleAnalysis(data);
-                    break;
-                case 'error':
-                    console.error("Server Error:", data.error);
-                    break;
-            }
+            this.handleMessage(data);
         };
 
         this.socket.onclose = () => {
@@ -201,7 +187,96 @@ class AudioClient {
         this.sendCommand('refresh_summary');
     }
 
+    async joinMeeting(event) {
+        event.preventDefault();
+
+        const meetingUrl = this.meetingUrlInput.value.trim();
+        if (!meetingUrl) {
+            this.connectionStatus.textContent = "Meeting URL required";
+            return;
+        }
+
+        this.joinMeetingBtn.disabled = true;
+        this.connectionStatus.textContent = "Joining meeting...";
+
+        try {
+            const response = await fetch('/api/vexa/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ meeting_url: meetingUrl, bot_name: 'Sales RPG AI' }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Unable to join meeting');
+            }
+
+            this.connectionStatus.textContent = `Vexa joined ${data.meeting_id || 'meeting'}`;
+            this.connectionStatus.classList.add('connected');
+            this.refreshSummaryBtn.disabled = false;
+            this.connectMonitorWebSocket();
+        } catch (error) {
+            console.error("Vexa join error:", error);
+            this.connectionStatus.textContent = error.message;
+            this.connectionStatus.classList.remove('connected');
+        } finally {
+            this.joinMeetingBtn.disabled = false;
+        }
+    }
+
+    connectMonitorWebSocket() {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN && !this.isRecording) {
+            return;
+        }
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/audio?role=monitor`;
+        this.socket = new WebSocket(wsUrl);
+
+        this.socket.onopen = () => {
+            this.connectionStatus.textContent = "Connected";
+            this.connectionStatus.classList.add('connected');
+        };
+
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleMessage(data);
+        };
+
+        this.socket.onclose = () => {
+            if (!this.isRecording) {
+                this.connectionStatus.textContent = "Disconnected";
+                this.connectionStatus.classList.remove('connected');
+            }
+        };
+
+        this.socket.onerror = (err) => {
+            console.error("Monitor WebSocket error:", err);
+        };
+    }
+
     // ── Message Handlers ──────────────────────────────────────────
+
+    handleMessage(data) {
+        switch (data.type) {
+            case 'transcript':
+                this.handleTranscript(data);
+                break;
+            case 'summary':
+                this.handleSummary(data);
+                break;
+            case 'recommendation':
+                this.handleRecommendation(data);
+                break;
+            case 'analysis':
+                // Legacy analysis — show as suggestion
+                this.handleAnalysis(data);
+                break;
+            case 'error':
+                console.error("Server Error:", data.error || data.message);
+                break;
+        }
+    }
 
     handleTranscript(data) {
         const segmentId = `segment-${Math.round(data.start * 10)}`;

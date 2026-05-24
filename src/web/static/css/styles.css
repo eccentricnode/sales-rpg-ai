@@ -75,6 +75,28 @@ body {
   gap: 0.75rem;
 }
 
+.vexa-join-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.meeting-url-input {
+  width: min(28vw, 18rem);
+  min-width: 10rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--bg-highlight);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.meeting-url-input:focus {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 1px;
+}
+
 .connection-status {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -134,6 +156,29 @@ body {
 }
 .btn-recommend:hover {
   background: linear-gradient(135deg, var(--accent-hover), #6d8fba);
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .header-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .vexa-join-form {
+    width: 100%;
+  }
+
+  .meeting-url-input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
 }
 
 /* ── Tabs ─────────────────────────────────────────────────────── */
