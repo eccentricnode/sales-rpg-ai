@@ -13,14 +13,14 @@
 
 - Connection drops are detected within 5 seconds by a heartbeat, timeout, ping, or scheduled stale-connection cleanup.
 - Reconnecting monitor clients receive all retained transcript history on connect.
-- Reconnecting recorder clients either resume a known session state or are explicitly rejected with a documented reason.
+- Reconnecting recorder clients receive an explicit `recorder_resume.supported=false` policy because live audio streams cannot be resumed safely from in-memory server state.
 - Half-open monitor connections are removed without waiting indefinitely for the next transcript broadcast.
 - Coaching state needed by the UI is preserved or replayed through the reconnection payload.
 
 ## Required Probe Evidence
 
 - Unit or integration probe showing invalid origins are rejected before acceptance.
-- Probe showing a reconnecting client receives transcript history and coaching/session state.
+- Probe showing a reconnecting monitor receives transcript history, coaching/session state, and the explicit recorder resume policy.
 - Probe showing a stale/half-open connection is removed within the 5-second SLA.
 - Live or TestClient/WebSocket probe showing runtime code schedules or invokes stale-connection cleanup.
 

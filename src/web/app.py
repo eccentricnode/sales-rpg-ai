@@ -11,6 +11,7 @@ import logging
 import os
 import sys
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
@@ -31,6 +32,7 @@ from dotenv import load_dotenv
 
 load_dotenv(project_root / ".env")
 
+from src.rag.integrity import verify_knowledge_base
 from src.realtime.analysis_orchestrator import AnalysisOrchestrator, AnalysisResult, StreamingAnalyzer
 from src.realtime.buffer_manager import DualBufferManager
 from src.realtime.llm_provider import get_llm_config
@@ -62,7 +64,17 @@ except ImportError:
     DUAL_CAPTURE_AVAILABLE = False
     logger.info("Dual capture not available (PyAudio not installed). /ws/dual-audio disabled.")
 
-app = FastAPI(title="Sales AI Web UI")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await startup_integrity_check()
+    try:
+        yield
+    finally:
+        await shutdown_connection_cleanup()
+
+
+app = FastAPI(title="Sales AI Web UI", lifespan=lifespan)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
@@ -108,6 +120,28 @@ TRANSCRIPTION_ENGINE = os.getenv("TRANSCRIPTION_ENGINE", "vad")  # "vad" or "whi
 
 # LLM configuration — loaded from src.realtime.llm_provider
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "local")
+knowledge_base_integrity_status: Optional[dict[str, Any]] = None
+
+
+def run_startup_integrity_check() -> dict[str, Any]:
+    """Verify RAG knowledge sources before runtime code can trust retrieval."""
+    result = verify_knowledge_base()
+    if not result.get("valid"):
+        error_summary = "; ".join(result.get("errors", [])) or "unknown integrity failure"
+        raise RuntimeError(f"Knowledge base integrity check failed: {error_summary}")
+    return result
+
+
+async def startup_integrity_check() -> None:
+    """FastAPI startup hook for security and connection lifecycle gates."""
+    global knowledge_base_integrity_status
+    knowledge_base_integrity_status = run_startup_integrity_check()
+    start_connection_cleanup_task()
+
+
+async def shutdown_connection_cleanup() -> None:
+    """Stop background cleanup tasks when the app lifecycle ends."""
+    await stop_connection_cleanup_task()
 
 
 # Global state for broadcasting
@@ -115,6 +149,8 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
         self.transcript_history: list[dict] = []
+        self.coaching_history: list[dict] = []
+        self.history_limit: int = 500
         self.connection_timeout: float = 5.0
         self.ping_interval: float = 2.0
 
@@ -122,7 +158,12 @@ class ConnectionManager:
         """Return session state for reconnection payload."""
         return {
             "transcript_history": list(self.transcript_history),
+            "coaching_history": list(self.coaching_history),
             "active_connections": len(self.active_connections),
+            "recorder_resume": {
+                "supported": False,
+                "reason": "Recorder WebSocket connections carry live audio streams; reconnecting starts a new session.",
+            },
         }
 
     async def cleanup_stale_connections(self):
@@ -140,9 +181,12 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
+        await websocket.send_json({"type": "session_state", **self.get_session_state()})
         # Send history to new connection
         for segment in self.transcript_history:
             await websocket.send_json(segment)
+        for message in self.coaching_history:
+            await websocket.send_json(message)
 
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
@@ -150,6 +194,7 @@ class ConnectionManager:
 
     async def reset(self):
         self.transcript_history = []
+        self.coaching_history = []
         for connection in self.active_connections:
             try:
                 await connection.send_json({"type": "reset"})
@@ -160,6 +205,10 @@ class ConnectionManager:
         # Store if it's a transcript segment
         if message.get("type") == "transcript":
             self.transcript_history.append(message)
+            self.transcript_history = self.transcript_history[-self.history_limit :]
+        elif message.get("type") in {"analysis", "summary", "recommendation", "coaching"}:
+            self.coaching_history.append(message)
+            self.coaching_history = self.coaching_history[-self.history_limit :]
 
         disconnected = []
         for connection in self.active_connections:
@@ -173,6 +222,35 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
+connection_cleanup_task: Optional[asyncio.Task] = None
+
+
+async def _connection_cleanup_loop() -> None:
+    """Scheduled heartbeat loop that removes half-open monitor connections."""
+    while True:
+        await asyncio.sleep(manager.ping_interval)
+        await manager.cleanup_stale_connections()
+
+
+def start_connection_cleanup_task() -> asyncio.Task:
+    """Start the background stale-connection cleanup loop if needed."""
+    global connection_cleanup_task
+    if connection_cleanup_task is None or connection_cleanup_task.done():
+        connection_cleanup_task = asyncio.create_task(_connection_cleanup_loop())
+    return connection_cleanup_task
+
+
+async def stop_connection_cleanup_task() -> None:
+    """Stop the background stale-connection cleanup loop."""
+    global connection_cleanup_task
+    task = connection_cleanup_task
+    connection_cleanup_task = None
+    if task and not task.done():
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 @dataclass
@@ -269,6 +347,14 @@ async def health_check():
         "whisper_port": WHISPER_PORT,
         "llm_provider": LLM_PROVIDER,
         "active_connections": len(manager.active_connections),
+        "knowledge_base_integrity": (
+            {
+                "valid": knowledge_base_integrity_status.get("valid"),
+                "files_checked": knowledge_base_integrity_status.get("files_checked"),
+            }
+            if knowledge_base_integrity_status
+            else {"valid": None, "files_checked": 0}
+        ),
     }
 
 

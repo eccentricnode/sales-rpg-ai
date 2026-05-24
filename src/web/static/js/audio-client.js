@@ -234,6 +234,7 @@ class AudioClient {
         this.socket = new WebSocket(wsUrl);
 
         this.socket.onopen = () => {
+            this.reconnectAttempts = 0;
             this.connectionStatus.textContent = "Connected";
             this.connectionStatus.classList.add('connected');
         };
@@ -247,6 +248,13 @@ class AudioClient {
             if (!this.isRecording) {
                 this.connectionStatus.textContent = "Disconnected";
                 this.connectionStatus.classList.remove('connected');
+
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 10000);
+                    this.connectionStatus.textContent = `Reconnecting (${this.reconnectAttempts})...`;
+                    this.reconnectTimer = setTimeout(() => this.connectMonitorWebSocket(), delay);
+                }
             }
         };
 

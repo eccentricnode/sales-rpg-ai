@@ -237,6 +237,19 @@ class TestS5_03_WebSocketReconnection(unittest.TestCase):
             has_session_state,
             "ConnectionManager must have get_session_state() or similar for reconnection to preserve coaching state.",
         )
+        state = manager.get_session_state()
+        self.assertEqual(len(state["transcript_history"]), 2)
+        self.assertIn("coaching_history", state)
+        self.assertEqual(state["recorder_resume"]["supported"], False)
+
+    def test_runtime_cleanup_task_is_schedulable(self):
+        """FastAPI startup must be able to schedule automatic stale cleanup."""
+        from src.web import app as app_module
+
+        self.assertTrue(
+            callable(app_module.start_connection_cleanup_task),
+            "Runtime code must expose a startup-scheduled stale-connection cleanup task.",
+        )
 
     def test_half_open_connection_cleanup(self):
         """Server must handle half-open connections (client gone, no FIN).
