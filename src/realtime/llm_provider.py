@@ -62,6 +62,18 @@ _DEFAULTS = {
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
         "model": "gemini-2.0-flash",
     },
+    "zai": {
+        "base_url": "https://api.z.ai/api/paas/v4",
+        "model": "glm-4.5-flash",
+    },
+    "opencode": {
+        "base_url": "https://opencode.ai/zen/v1",
+        "model": "claude-haiku-4-5",
+    },
+    "modal": {
+        "base_url": "",  # set via MODAL_BASE_URL — your deployed Modal app's URL
+        "model": "Qwen/Qwen2.5-7B-Instruct",
+    },
 }
 
 SUPPORTED_PROVIDERS = list(_DEFAULTS.keys())
@@ -185,6 +197,56 @@ def get_llm_config(provider: str | None = None) -> LLMConfig:
             model=model,
             provider=provider,
             fallback_model=_fallback_model(provider, "GEMINI"),
+        )
+
+    if provider == "zai":
+        key = os.getenv("ZAI_API_KEY", "")
+        if not key:
+            raise ValueError("ZAI_API_KEY not set. Get one at: https://z.ai")
+        base_url = os.getenv("ZAI_BASE_URL", _DEFAULTS["zai"]["base_url"])
+        model = os.getenv("ZAI_MODEL", _DEFAULTS["zai"]["model"])
+        logger.info(f"Using z.ai GLM ({model})")
+        return LLMConfig(
+            api_key=key,
+            base_url=base_url,
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "ZAI"),
+        )
+
+    if provider == "opencode":
+        key = os.getenv("OPENCODE_API_KEY", "")
+        if not key:
+            raise ValueError("OPENCODE_API_KEY not set. Get one at: https://opencode.ai")
+        base_url = os.getenv("OPENCODE_BASE_URL", _DEFAULTS["opencode"]["base_url"])
+        model = os.getenv("OPENCODE_MODEL", _DEFAULTS["opencode"]["model"])
+        logger.info(f"Using OpenCode Zen ({model})")
+        return LLMConfig(
+            api_key=key,
+            base_url=base_url,
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "OPENCODE"),
+        )
+
+    if provider == "modal":
+        base_url = os.getenv("MODAL_BASE_URL", "")
+        if not base_url:
+            raise ValueError(
+                "MODAL_BASE_URL not set. Deploy a vLLM-style OpenAI-compatible app "
+                "to Modal and set MODAL_BASE_URL to its endpoint URL + '/v1'."
+            )
+        # Modal web endpoints are auth'd by URL (unguessable). The OpenAI client
+        # still requires *some* api_key string, so default to a placeholder.
+        key = os.getenv("MODAL_API_KEY", "modal")
+        model = os.getenv("MODAL_MODEL", _DEFAULTS["modal"]["model"])
+        logger.info(f"Using Modal vLLM at {base_url} ({model})")
+        return LLMConfig(
+            api_key=key,
+            base_url=base_url,
+            model=model,
+            provider=provider,
+            fallback_model=_fallback_model(provider, "MODAL"),
         )
 
     raise ValueError(f"Unknown LLM_PROVIDER: {provider}. Options: {', '.join(SUPPORTED_PROVIDERS)}")
