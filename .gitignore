@@ -1,0 +1,18 @@
+*.mp4
+test-transcript-*
+__pycache__/
+*.wav
+*.mp4
+*.srt
+.env
+*.gguf
+models/*
+!models/phi-3.5-mini.yaml
+data/
+.ralph-runs/
+
+# proprietary sales IP + real call data — must NOT be in this public repo
+knowledge_base/
+*.docx
+# accidentally-committed agent worktrees (recursive junk)
+.claude/worktrees/

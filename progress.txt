@@ -1,0 +1,50 @@
+# Sales RPG AI — Progress Log
+
+## Project State (2026-03-09)
+
+### Completed
+- Phase 1: Proof of concept (objection detection works)
+- Phase 2: Real-time streaming (DualBufferManager + StreamingAnalyzer)
+- Phase 3: CANCELLED — over-engineered state machine approach
+- Phase 4: Minimal script-only pivot (stateless LLM with script context)
+
+### Current Architecture
+- FastAPI + WebSocket server (src/web/app.py — 729 lines, needs decomposition)
+- VadTranscriber (local VAD + Whisper) or WhisperLiveKit (Docker)
+- DualBufferManager (5 trigger conditions: time, segments, chars, sentence-end, silence)
+- StreamingAnalyzer (OpenAI-compatible API, supports 7 providers)
+- SummaryEngine (timer-based, 5-min rolling summaries)
+- RAG pipeline (ChromaDB + sentence-transformers, 66-88% token savings)
+- Docker deployment (3-service compose stack)
+
+### Known Issues
+- Mic cutoff bug: audio sometimes cuts off mid-sentence (VAD or browser chunking)
+- 5-second latency on local Phi-3.5-mini (acceptable for MVP, not production)
+- Context engine stubbed out (on_state_analysis_ready=lambda x: None)
+- app.py is a 729-line monolith handling routing, WebSocket, LLM config, and business logic
+- No threat model for a system handling live sales calls with PII
+
+### Patterns Discovered
+- Small local models (Phi-3.5-mini) achieve parity with larger models when given domain context
+- RAG reduces token usage 66-88% by retrieving only relevant script sections
+- Stateless approach (Phase 4) is simpler and more reliable than stateful (Phase 3)
+- Sentence-ending punctuation is a reliable analysis trigger
+- 5 trigger conditions interact — modifying one affects others (buffer_manager invariant)
+
+### Quality Gate Status (2026-03-09)
+- ruff: CONFIGURED — pre-existing violations in src/rag/build.py (E402, F541), src/validation/ (various)
+- mypy: CONFIGURED — 25 pre-existing errors (type annotations missing, None checks, union types)
+- pytest: 4/4 tests pass (test_buffer_manager.py verified, others need PyAudio/Docker)
+- format: CONFIGURED via ruff format
+- NOTE: `pythonpath = ["."]` in pyproject.toml required for test imports
+
+### Completed Stories
+- S5-01: Extract LLM provider interface — DONE (2026-03-10)
+  - Created src/realtime/llm_provider.py with typed LLMConfig dataclass
+  - Updated app.py call sites from tuple unpacking to dataclass attributes
+  - 4/4 tests pass, no new ruff/mypy issues introduced
+
+### Next Steps
+1. S5-02: Fix mic cutoff bug (root cause in VAD/browser chunking)
+2. S5-03: WebSocket error handling and reconnection
+3. Continue quality gate cleanup (ruff, mypy pre-existing violations)
